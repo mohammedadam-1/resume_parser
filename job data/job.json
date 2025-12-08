@@ -1,0 +1,14 @@
+[
+    {
+        "id": 1,
+        "title": "Python Developer",
+        "skills": ["Python", "Django", "REST API", "SQL","Angular", "Next.js", "LLM", "NLP"],
+        "experience_required": 1
+    },
+    {
+        "id": 2,
+        "title": "Frontend Developer",
+        "skills": ["HTML", "CSS", "JavaScript", "React", "Angular", "Next.js","Vue.js"],
+        "experience_required": 1
+    }
+]

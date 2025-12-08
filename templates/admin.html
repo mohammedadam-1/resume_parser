@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+</head>
+<body style="font-family: Arial; padding: 40px;">
+  <h2>✅ Selected Candidates</h2>
+  {% if candidates %}
+    <table border="1" cellpadding="8">
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Job</th>
+        <th>Match %</th>
+        <th>Resume</th>
+      </tr>
+      {% for c in candidates %}
+      <tr>
+        <td>{{ c.name }}</td>
+        <td>{{ c.email }}</td>
+        <td>{{ c.phone }}</td>
+        <td>{{ jobs[c.job_id].title }}</td>
+        <td>{{ c.match_percent }}%</td>
+        <td><a href="/uploads/{{ c.resume }}" target="_blank">View Resume</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No selected candidates yet.</p>
+  {% endif %}
+</body>
+</html>
