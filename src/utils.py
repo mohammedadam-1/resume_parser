@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 from src.exception import CustomException
 from src.logger import logging
+import pymupdf
 
 
 def check_file_extension(file_path):
@@ -29,8 +30,8 @@ def check_file_size(file_path):
         
         file_size = Path(file_path).stat().st_size
         file_size = bytes(file_size)
-        min_file_size = b'\x00' * 100
-        max_file_size = 100 * 1024 * 1024
+        min_file_size = b'\x00' * 100 * 10
+        max_file_size = 5 * 1024 * 1024
         max_file_size = bytes(max_file_size)
         if file_size >= min_file_size and file_size <= max_file_size:
             logging.info('valid file size')
@@ -42,6 +43,23 @@ def check_file_size(file_path):
         
     except Exception as e:
         raise CustomException(e, sys)    
+    
+    
+def route_filetype(file_path):
+    """route to specific file extension extractor"""   
+    
+    try:
+        
+        filepath = Path(file_path)
+        if filepath.suffix.lower() == '.pdf':
+            doc = pymupdf.open(filepath)
+            for page in doc:
+                text = page.get_text()
+        
+        return text    
+            
+    except Exception as e:
+        raise CustomException(e, sys) 
     
     
         
