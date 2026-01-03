@@ -6,7 +6,10 @@ import tempfile
 from src.utils import check_file_extension, check_file_size
 from pathlib import Path 
 import shutil
-from src.utils import route_filetype
+from src.extraction_pipeline.data_extraction import Extract
+from src.llm_pipeline.llm_semantic_parsing import Parse_Data
+from src.llm_pipeline.normalization_validation import Validate
+from src.llm_pipeline.normalization_validation import Normalize
 
  
 class FileInput():
@@ -56,31 +59,27 @@ class FileInput():
             logging.info('invalid file')
             raise CustomException(e, sys)
     
-    def extract_text(self, file_path):
-        """Pass the file path to their specific file extractors,
-        and return the extracted content"""
-        
-        try:
-            
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"The specified path was not found: {file_path}")
-            
-            file_content = route_filetype(file_path)
-            print(file_content)
-            logging.info('extracted content from the file')
-            return file_content
-        
-        except Exception as e:
-            logging.info('failed to extract content from the file')
-            raise CustomException(e, sys)
-        
+    
     
     
 if __name__ == '__main__':
     
-    check_filepath = FileInput('data/mohammedAdamResume.pdf')  
+    check_filepath = FileInput('data/test2_pdf.pdf')  
     temp_dir, file_path = check_filepath.return_valid_file()
-    file_content = check_filepath.extract_text(file_path)
+    
+    file_obj = Extract(file_path)
+    file_content = file_obj.extract_text()
+    
+    llm_obj = Parse_Data(file_content)
+    llm_response = llm_obj.llm_parser()
+    
+    validate_obj = Validate(llm_response)
+    validated_data = validate_obj.data_validation()
+    
+    normalize_obj = Normalize(validated_data)
+    normalized_data = normalize_obj.string_normalization()
+    
+    
     
     shutil.rmtree(temp_dir) 
             
