@@ -7,10 +7,11 @@ from src.utils import check_file_extension, check_file_size
 from pathlib import Path 
 import shutil
 from src.extraction_pipeline.data_extraction import Extract
-from src.llm_pipeline.llm_semantic_parsing import Parse_Data
-from src.llm_pipeline.normalization_validation import Validate
-from src.llm_pipeline.normalization_validation import Normalize
-
+from src.llm_pipeline.llm_semantic_parsing import Parse_Resume_Data
+from src.llm_pipeline.data_validation_normalization import Validate
+from src.llm_pipeline.data_validation_normalization import Normalize
+from src.llm_pipeline.llm_semantic_parsing import Parse_Jd_Data
+from src.input_pipeline.jd_input import Jd_Parsing
  
 class FileInput():
     def __init__(self, file_path):
@@ -64,21 +65,43 @@ class FileInput():
     
 if __name__ == '__main__':
     
-    check_filepath = FileInput('data/test2_pdf.pdf')  
+    check_filepath = FileInput(r'data\mohammedAdamResume.pdf')  
     temp_dir, file_path = check_filepath.return_valid_file()
     
     file_obj = Extract(file_path)
     file_content = file_obj.extract_text()
     
-    llm_obj = Parse_Data(file_content)
-    llm_response = llm_obj.llm_parser()
+    llm_obj = Parse_Resume_Data(file_content)
+    llm_response = llm_obj.llm_resume_parser()
     
     validate_obj = Validate(llm_response)
     validated_data = validate_obj.data_validation()
     
     normalize_obj = Normalize(validated_data)
-    normalized_data = normalize_obj.string_normalization()
+    normalized_data = normalize_obj.projects()
     
+    jd_obj = Jd_Parsing("""Role- AI/ML Engineer
+years of experience- 5+ years
+location- Pan India
+skills required- AI/ML, GEN AI
+Job description:
+Hands-on experience in data science and machine learning (both traditional ML and LLM-based solutions).
+Strong programming skills in Python and familiarity with libraries like PyTorch, TensorFlow, Scikit-learn, LangChain, and HuggingFace.
+Experience building APIs and deploying models with FastAPI.
+Proven experience with AWS ML stack (SageMaker, Bedrock Lambda, EKS, etc.).
+Strong understanding of AI Governance principles including compliance, security, explainability, and monitoring.
+Experience with agents, LLMs, and GenAI applications in production environments.
+Solid foundation in MLOps practices (CI/CD, versioning, monitoring, automation).
+Excellent problem-solving skills and the ability to work cross-functionally with business and engineering teams.
+""")
+    jd_data = jd_obj.jd_data()
+    llm_jd_obj = Parse_Jd_Data(jd_data)
+    llm_jd_response = llm_jd_obj.llm_jd_parser()
+    validate_jd_obj = Validate(llm_jd_response)
+    validated_jd = validate_jd_obj.data_validation()
+    normalize_jd_obj = Normalize(validated_jd)
+    normalized_jd = normalize_jd_obj.normalize_jd()
+    print(normalized_jd)
     
     
     shutil.rmtree(temp_dir) 

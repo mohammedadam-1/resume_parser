@@ -61,8 +61,38 @@ def route_filetype(file_path):
     except Exception as e:
         raise CustomException(e, sys) 
     
+def _recursive_strip(item):
+    """strip and return data"""
+    try:
+        
+        if isinstance(item, str):
+            return item.strip()
+        elif isinstance(item, list):
+            return [_recursive_strip(i) for i in item]
+        elif isinstance(item, dict):
+            return {k: _recursive_strip(v) for k, v in item.items()}
+        logging.info("striped data from strings successfully")
+        
+        return item
     
+    except Exception as e:
+        raise CustomException(e, sys)
+    
+    
+def _recursive_lower(item):
+    """convert the strings into lower and return data"""
+    
+    try:
+        if isinstance(item, str):
+            return item.lower()
+        elif isinstance(item, list):
+            return [_recursive_lower(i) for i in item]
+        elif isinstance(item, dict):
+            return {k: _recursive_lower(v) for k, v in item.items()}
         
+        return item
         
+    except Exception as e:
+        raise CustomException(e, sys)    
         
         

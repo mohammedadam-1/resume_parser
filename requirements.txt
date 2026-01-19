@@ -3,3 +3,4 @@ PyPDF
 PDFPlumber 
 docx2python
 groq
+dotenv
