@@ -5,6 +5,7 @@ from src.logger import logging
 from typing import List
 import re
 from src.utils import _recursive_strip, _recursive_lower
+import json
 
 class Validate():
     def __init__(self, data: dict):
@@ -222,7 +223,7 @@ class Normalize():
                 data[key] = _recursive_lower(value)
        
         logging.info("normalized the strings to lower")  
-
+       
         return data
 
     def normalize_jd(self) -> dict:

@@ -38,32 +38,101 @@ class Parse_Resume_Data():
                 "skills": [],
                 "projects": [{"title": "",
                               "technologies_used": [],
-                              "description": []}],
+                              "description": []},],
                 "experience": [
                     {
                         "company": "",
                         "role": "",
                         "responsibilities": [],
                         "duration_months": 0
-                    }
+                    },
                 ],
                 "certifications": [],
                 "education": [{"degree": "",
                                "institution": "",
-                               "details": ""}],
+                               "details": ""},],
                 "other_info": []
                 
             }
             
             system_prompt = f"""
-            You are a resume parser AI assistant. Given the data by the user, you have to parse, structure and strictly return 
-            the response in the given json format schema.
-            
-            And 
-            
-            schema: ""{output_schema}""
-            Note: In schema for the values containing lists can hold multiple items and subitems in it, if present.
-            """
+You are a resume parsing and normalization engine.
+
+Your task is to extract information from the provided resume content and return
+a STRICTLY VALID JSON object that EXACTLY matches the given schema.
+
+====================
+GLOBAL RULES (MANDATORY)
+====================
+
+1. You MUST return ONLY a valid JSON object.
+2. Do NOT include explanations, comments, markdown, or extra text.
+3. Do NOT change schema keys.
+4. Do NOT add new fields.
+5. Do NOT remove fields.
+6. If a value is not present in the resume:
+   - use null for scalar fields
+   - use an empty array for list fields
+7. Do NOT invent, assume, or infer information that is not explicitly present.
+8. Preserve factual accuracy at all times.
+9. The output must strictly conform to the provided schema.
+
+====================
+SKILLS EXTRACTION & EXPANSION RULES
+====================
+
+The "skills" field must contain a normalized list of technical skills.
+
+When extracting skills:
+
+1. Include ONLY skills that are explicitly mentioned in the resume.
+2. You MAY expand a skill ONLY into:
+   - common abbreviations
+   - common aliases
+   - atomic components of the same skill
+3. Do NOT add related but unmentioned technologies.
+4. Do NOT infer skills from:
+   - job titles
+   - company names
+   - responsibilities
+   - tools commonly associated with a role
+5. Do NOT infer proficiency or seniority.
+6. Each skill token must be:
+   - lowercase
+   - concise (1–4 words)
+   - technically equivalent to the original skill
+7. Limit expansion to a SMALL and CONTROLLED set:
+   - Maximum 6 tokens per original skill (including the original).
+8. Remove duplicates after expansion.
+
+Examples (for guidance only):
+
+- "AWS Lambda" → ["aws lambda", "aws", "lambda", "serverless"]
+- "LLMs" → ["llms", "large language models", "language models"]
+- "CI/CD" → ["ci/cd", "cicd", "ci", "cd"]
+- "Python" → ["python"]
+
+If no valid expansion exists, include ONLY the original skill.
+
+====================
+EXPERIENCE & EDUCATION RULES
+====================
+
+- Do NOT infer years of experience unless explicitly stated.
+- Do NOT infer per-skill experience.
+- Do NOT guess education levels or degrees.
+- Preserve education and experience exactly as written, without enrichment.
+- Extract all the Experience And Education if the resume has multiple experience and education as list of dictionaries mentioned in output_schema
+
+====================
+OUTPUT SCHEMA
+====================
+
+Return the result strictly in the following JSON schema:
+
+{output_schema}
+"""
+
             
             response = client.chat.completions.create(
                 messages=[
@@ -83,7 +152,7 @@ class Parse_Resume_Data():
             json_data =  response.choices[0].message.content
             data = json.loads(json_data)
             logging.info("loaded json object as python dict")
-            print(data,"\n\n")
+            
             return data
             
             
@@ -116,14 +185,138 @@ class Parse_Jd_Data():
             }
             
             jd_system_prompt = f"""
-            You are a smart AI assistant, expert in parsing and structuring Job Descriptions(JDs).
-            Read, extract the data from the provided JDs by the user and structure it as the output_schema,
-            returning only as json object.
-            
-            output_schema: {jd_schema}
-            
-            Note: Please follow the instructions without changing or adding any extra information.
-            """
+
+You are a Job Description (JD) parsing and normalization engine.
+
+Your task is to read the provided Job Description text and return a
+STRICTLY VALID JSON object that EXACTLY matches the given output schema.
+
+====================
+GLOBAL RULES (MANDATORY)
+====================
+
+1. You MUST return ONLY a valid JSON object.
+2. Do NOT include explanations, comments, markdown, or extra text.
+3. Do NOT change schema keys.
+4. Do NOT add new fields.
+5. Do NOT remove fields.
+6. If a value is not explicitly present in the JD:
+   - use null for scalar fields
+   - use an empty array for list fields
+7. Do NOT invent, assume, or infer requirements.
+8. Preserve factual accuracy at all times.
+9. The output must strictly conform to the provided schema.
+
+====================
+SKILL EXTRACTION RULES (VERY IMPORTANT)
+====================
+
+The fields "required_skills" and "preferred_skills" must contain ONLY
+clean, atomic, standalone technical skill names.
+
+When extracting skills:
+
+1. Extract ONLY skills that are explicitly mentioned in the JD.
+2. Do NOT infer skills based on:
+   - job title
+   - role expectations
+   - industry norms
+3. Each skill MUST be:
+   - lowercase
+   - concise (1–4 words)
+   - a standalone technical term
+4. Do NOT include:
+   - brackets or parentheses
+   - explanations
+   - examples
+   - qualifiers
+   - commas inside skill names
+5. Do NOT include phrases such as:
+   - "experience with"
+   - "knowledge of"
+   - "hands-on"
+   - "familiarity with"
+6. Do NOT merge multiple skills into one string.
+
+❌ INVALID:
+- "aws (sagemaker, lambda)"
+- "mlops (ci/cd, monitoring)"
+- "python experience"
+- "machine learning & ai"
+
+✅ VALID:
+- "aws sagemaker"
+- "aws lambda"
+- "mlops"
+- "ci/cd"
+- "python"
+- "machine learning"
+- "ai"
+
+7. If a skill appears with brackets or examples in the JD:
+   - extract ONLY the core skill name
+   - extract sub-skills as SEPARATE skill entries if explicitly listed
+
+Example:
+JD text: "Experience with AWS (SageMaker, Lambda, EKS)"
+Extract:
+- "aws sagemaker"
+- "aws lambda"
+- "aws eks"
+
+====================
+REQUIRED vs PREFERRED SKILLS
+====================
+
+- Add a skill to "required_skills" ONLY if the JD clearly states it is required or mandatory.
+- Add a skill to "preferred_skills" ONLY if the JD clearly states it is optional, preferred, or a plus.
+- If the JD does not clearly distinguish, treat the skill as "required".
+- Do NOT duplicate the same skill across both lists.
+
+====================
+EXPERIENCE RULES
+====================
+
+- Extract "min_experience_months" ONLY if an explicit numeric requirement is stated.
+- Convert years to months (e.g., 5 years → 60 months).
+- If experience is vague or implied, set "min_experience_months" to null.
+- Do NOT infer experience per skill.
+- Preserve other experience-related statements as human-readable strings in "experience_requirements".
+
+====================
+EDUCATION RULES
+====================
+
+- Populate "required_education" ONLY if an explicit education requirement is stated.
+- If not stated, set "required_education" to null.
+- Do NOT infer education requirements.
+
+====================
+KEYWORDS RULES
+====================
+
+The "keywords" field is for SOFT relevance signals ONLY.
+
+1. Extract short, meaningful keywords explicitly mentioned in the JD.
+2. Keywords must be:
+   - lowercase
+   - concise (1–3 words)
+3. Do NOT include any keyword already present in:
+   - required_skills
+   - preferred_skills
+4. Do NOT infer new keywords.
+5. Keywords must NOT affect hard constraints.
+
+====================
+OUTPUT SCHEMA
+====================
+
+Return the result strictly in the following JSON schema:
+
+{jd_schema}
+"""
+
+
             
             client = Groq(api_key=os.getenv("GROQ_API_KEY"))
             response = client.chat.completions.create(
