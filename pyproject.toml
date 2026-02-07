@@ -17,4 +17,9 @@ dependencies = [
     "uv>=0.9.26",
     "wheel>=0.46.2",
     "datefinder>=0.7.3",
+    "scikit-learn>=1.8.0",
+    "sentence-transformers>=5.2.2",
+    "torch>=2.10.0",
+    "fastapi[standard]>=0.128.0",
+    "pydantic>=2.12.5",
 ]

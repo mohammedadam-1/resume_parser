@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Resume Scoring System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      max-width: 900px;
+    }
+    h2 {
+      margin-bottom: 10px;
+    }
+    textarea {
+      width: 100%;
+      height: 180px;
+      margin-top: 10px;
+    }
+    input[type="file"] {
+      margin-top: 10px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f4f4f4;
+      border-radius: 6px;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      color: white;
+      font-weight: bold;
+    }
+    .strong { background: #2e7d32; }
+    .good { background: #0277bd; }
+    .potential { background: #ed6c02; }
+    .notfit { background: #c62828; }
+    table {
+      margin-top: 15px;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    table td, table th {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Resume Scoring</h2>
+
+  <label><strong>Upload Resume (PDF or TXT)</strong></label><br>
+  <input type="file" id="resumeFile" accept=".pdf,.txt" />
+
+  <br><br>
+
+  <label><strong>Paste Job Description</strong></label>
+  <textarea id="jdText" placeholder="Paste the job description here..."></textarea>
+
+  <br>
+  <button onclick="submitResume()">Score Candidate</button>
+
+  <div id="result" class="result" style="display:none;"></div>
+
+<script>
+async function submitData() {
+  const resumeFile = document.getElementById("resumeFile")?.files[0];
+  const jdText = document.getElementById("jdText")?.value;
+  const resultDiv = document.getElementById("result");
+
+  resultDiv.style.display = "none";
+  resultDiv.innerHTML = "";
+
+  if (!resumeFile) {
+    alert("Please upload a resume.");
+    return;
+  }
+
+  if (!jdText?.trim()) {
+    alert("Please paste the job description.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("resume", resumeFile);
+  formData.append("jd_text", jdText);
+
+  try {
+    const response = await fetch("http://127.0.0.1:8000/score/resume", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await response.json();
+    resultDiv.style.display = "block";
+
+    // HARD FAIL
+    if (data.hard_fail === true) {
+      resultDiv.innerHTML = `
+        <div style="color:red;">
+          ❌ Candidate Rejected<br/>
+          Failed Gate: <b>${data.failed_gate}</b><br/>
+          Candidate Score: ${data.details?.candidate_score}<br/>
+          Minimum Required: ${data.details?.minimum_required}
+        </div>
+      `;
+      return;
+    }
+
+    // SUCCESS
+    resultDiv.innerHTML = `
+      <h3>${data.classification}</h3>
+      <p><strong>Final Score:</strong> ${data.final_score}</p>
+
+      <table border="1" cellpadding="6">
+        <tr><th>Category</th><th>Score</th></tr>
+        <tr><td>Required Skills</td><td>${data.details.required_skills}</td></tr>
+        <tr><td>Preferred Skills</td><td>${data.details.preferred_skills}</td></tr>
+        <tr><td>Experience</td><td>${data.details.experience}</td></tr>
+        <tr><td>Education</td><td>${data.details.education}</td></tr>
+        <tr><td>Keywords</td><td>${data.details.keywords}</td></tr>
+      </table>
+    `;
+
+  } catch (err) {
+    resultDiv.style.display = "block";
+    resultDiv.innerHTML = `<div style="color:red;">Error: ${err.message}</div>`;
+  }
+}
+</script>
+
+
+</body>
+</html>

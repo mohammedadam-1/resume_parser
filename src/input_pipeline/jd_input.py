@@ -1,11 +1,11 @@
 import os 
 import sys 
 from src.exception import CustomException 
-from src.logger import logging 
+from src.logger import logging
+from pydantic import BaseModel
 
-class Jd_Parsing():
-    def __init__(self, data:str):
-        self.data = data 
+class Jd_Parsing(BaseModel):
+    data: str
         
     def jd_data(self):
         return self.data

@@ -1,145 +1,157 @@
-import os 
-import sys 
-from src.exception import CustomException
-from src.logger import logging
-import tempfile
-from src.utils import check_file_extension, check_file_size, parse_experience_from_resume
-from pathlib import Path 
-import shutil
-from src.extraction_pipeline.data_extraction import Extract
-from src.llm_pipeline.llm_semantic_parsing import Parse_Resume_Data
-from src.llm_pipeline.data_validation_normalization import Validate
-from src.llm_pipeline.data_validation_normalization import Normalize
-from src.llm_pipeline.llm_semantic_parsing import Parse_Jd_Data
-from src.input_pipeline.jd_input import Jd_Parsing
-from src.semantic_scoring.candidate_score import Candidate_Score
+# import os 
+# import sys 
+# from src.exception import CustomException
+# from src.logger import logging
+# import tempfile
+# from src.utils import check_file_extension, check_file_size, parse_experience_from_resume
+# from pathlib import Path 
+# import shutil
+# from src.extraction_pipeline.data_extraction import Extract
+# from src.llm_pipeline.llm_semantic_parsing import Parse_Resume_Data
+# from src.llm_pipeline.data_validation_normalization import Validate
+# from src.llm_pipeline.data_validation_normalization import Normalize
+# from src.llm_pipeline.llm_semantic_parsing import Parse_Jd_Data
+# from src.input_pipeline.jd_input import Jd_Parsing
+# from src.semantic_scoring.candidate_score import Candidate_Score
+# from src.semantic_scoring.candidate_fail_fast import Fail_Fast
+# from src.classify_candidates.classify import Classify
+# from fastapi import FastAPI
  
-class FileInput():
-    def __init__(self, file_path):
-        self.file_path : str = file_path
+# class FileInput():
+#     def __init__(self, file_path):
+#         self.file_path : str = file_path
         
         
         
-    def return_valid_file(self):
-        """User uploads a resume file. Based on the conditions the
-        file is uploaded successfully, else"""
+#     def return_valid_file(self):
+#         """User uploads a resume file. Based on the conditions the
+#         file is uploaded successfully, else"""
         
-        try:
+#         try:
             
-            if os.path.exists(self.file_path):
-                logging.info(f'the file {self.file_path} exists')
-                file_type = check_file_extension(self.file_path)
+#             if os.path.exists(self.file_path):
+#                 logging.info(f'the file {self.file_path} exists')
+#                 file_type = check_file_extension(self.file_path)
                 
-                if file_type == self.file_path:
-                    logging.info('file extension is valid, return file path')
-                    file_size_type = check_file_size(self.file_path)
+#                 if file_type == self.file_path:
+#                     logging.info('file extension is valid, return file path')
+#                     file_size_type = check_file_size(self.file_path)
                     
-                    if file_size_type == self.file_path:
-                        logging.info('file size is valid, return file path')
+#                     if file_size_type == self.file_path:
+#                         logging.info('file size is valid, return file path')
                         
-                        temp_dir = tempfile.mkdtemp()
+#                         temp_dir = tempfile.mkdtemp()
                         
-                        filename = os.path.basename(self.file_path)
-                        temp_file_path = os.path.join(temp_dir, filename)
+#                         filename = os.path.basename(self.file_path)
+#                         temp_file_path = os.path.join(temp_dir, filename)
                         
-                        # copying the file
-                        shutil.copy2(self.file_path, temp_file_path)
+#                         # copying the file
+#                         shutil.copy2(self.file_path, temp_file_path)
 
-                        return temp_dir, temp_file_path
+#                         return temp_dir, temp_file_path
                            
                         
-                    else:
-                        print(f"invalid file size, filesize supported till 100Mb")   
+#                     else:
+#                         print(f"invalid file size, filesize supported till 100Mb")   
                         
-                else:
-                    print(f"Please check and re-upload a valid file.")
+#                 else:
+#                     print(f"Please check and re-upload a valid file.")
                     
-            else:
-                print("File does not exists") 
+#             else:
+#                 print("File does not exists") 
                    
-        except Exception as e:
-            logging.info('invalid file')
-            raise CustomException(e, sys)
+#         except Exception as e:
+#             logging.info('invalid file')
+#             raise CustomException(e, sys)
     
     
     
     
-if __name__ == '__main__':
+# if __name__ == '__main__':
     
-    check_filepath = FileInput(r'data\Resume_data_analyst_fresher.pdf')  
-    temp_dir, file_path = check_filepath.return_valid_file()
+#     check_filepath = FileInput(r"data\Data_Scientist_Resume.pdf")  
+#     temp_dir, file_path = check_filepath.return_valid_file()
     
-    file_obj = Extract(file_path)
-    file_content = file_obj.extract_text()
-    print("Resume \n", file_content, "------------------------------")
-    a = parse_experience_from_resume(file_content)
+#     file_obj = Extract(file_path)
+#     file_content = file_obj.extract_text() 
+#     # print(f"\nFile_Content: {file_content}\n\n")  
+           
 #     llm_obj = Parse_Resume_Data(file_content)
 #     llm_response = llm_obj.llm_resume_parser()
-#     print(f"\n\n{llm_response}\n\n")
-#     validate_obj = Validate(llm_response)
-#     validated_data = validate_obj.data_validation()
+#     validate_obj = Validate(llm_response)           
+#     validated_resume_data = validate_obj.resume_data_validation()
     
-#     normalize_obj = Normalize(validated_data)
-#     normalized_resume_data = normalize_obj.projects()
-#     print(normalized_resume_data)
-#     jd_obj = Jd_Parsing("""About the job
-# About Digitap.ai:
+#     normalize_obj = Normalize(validated_resume_data)
+#     normalized_resume_data = normalize_obj.education_test()
+#     # print(f"resume: {normalized_resume_data}\n")
+    
+#     jd_obj = Jd_Parsing("""
+#     About the job
+# Data Scientist – Bangalore
 
-# DIGITAP.AI is an Enterprise SaaS company providing high-tech advanced AI/ML, Alternate Data Solutions to new-age internet-driven businesses for reliable, fast, and 100% compliant Customer Onboarding, Alternate Data Solutions for Automated Risk Management, and other Value-Added Services. Our proprietary Machine Learning Algorithms and Modules provide one of the best success rates in the market. We work with the top digital lenders of India & the team brings together deep and vibrant experience in Fintech Product & Risk Management, Fraud Detection, and Risk Analytics.
+# No. of Position: 4
+# Preferred to be in onshore, if not offshore India but candidate should be based out of Bangalore
 
-# Culture and Benefits:
+# Interview Process: Single round, Face-to-Face only
 
-# Innovative Start-up Environment: Enjoy the flexibility to design, implement, and influence the development of cutting-edge solutions.
-# Transparency and Meritocracy: We value clear communication, eschew politics, and promote an open culture where contributions are recognized and rewarded.
-# Ownership and Impact: We encourage team members to take ownership, think beyond their roles, and contribute to the company's success in meaningful ways.
-# Competitive Compensation: We offer a competitive salary and a potential equity package, aligning your success with the company's growth.
+# Experience: 5–6 years
 
+# Profile Expectation: Strong hands-on, hardcore development-oriented candidates
 
-# Job Description:
+# Required Skills:
+# Strong proficiency in Python (Pandas, NumPy, Scikit-learn)
+# Strong SQL skills for data extraction and analysis
+# Hands-on experience in Machine Learning (regression, classification, clustering)
+# Solid understanding of statistics and probability
+# Experience in data cleaning, feature engineering, and model evaluation
+# Knowledge of time series analysis and forecasting
 
-# As a Data Scientist – Machine Learning, you will design and develop advanced ML models for credit scoring and risk assessment, while also leading research and innovation in large-scale transformer-based systems.
+# Tools & Platforms:
+# Python libraries: Scikit-learn, TensorFlow / PyTorch (preferred)
+# Data visualization: Power BI, Tableau, Matplotlib, Seaborn
+# Big data exposure: Spark / PySpark (good to have)
+# Version control: Git / GitHub
+# Cloud exposure: AWS, Azure, or GCP
+# Data platforms: Snowflake / BigQuery / Redshift (preferred)
+# Understanding of ETL and data pipelines
 
-# Key Responsibilities:
+# Business & Domain Exposure:
+# Ability to convert business problems into data-driven solutions
+# Experience working with large, real-world datasets
+# Strong analytical, communication, and stakeholder management skills
+# Domain exposure to Banking, Insurance, Retail, or Telecom is a plus
+# Experience in risk modeling, customer analytics, or fraud detection is desirable
+# Awareness of data privacy and compliance standards (POPIA knowledge is an advantage)
 
-# Credit & Risk Analytics: Design, develop, and optimize ML models for credit scoring, risk prediction, and scorecard generation.
-# Model Deployment & Automation: Implement scalable pipelines for model training, validation, and deployment in production environments.
-# Feature Engineering: Identify, extract, and engineer key features from structured and unstructured data to enhance model performance.
-# Model Monitoring: Establish continuous monitoring frameworks to track model drift, performance metrics, and data quality.
-# Research & Innovation: Explore and apply state-of-the-art ML and transformer architectures to improve predictive accuracy and interpretability.
-# Collaboration: Work closely with data engineers, product managers, and domain experts to translate business objectives into robust ML solutions.
-
-
-# Required Skills and Experience:
-
-# Machine Learning: 2+ years of hands-on experience in developing, training, and deploying ML models for structured or tabular data.
-# Statistical Modeling: Solid understanding of statistical concepts, feature engineering, and model evaluation techniques.
-# ML Frameworks: Experience with scikit-learn, PyTorch, or TensorFlow for building and optimizing predictive models.
-# Python Programming: Strong proficiency in Python, with experience using NumPy, Pandas, and Matplotlib for data manipulation and analysis.
-# Data Handling: Practical experience with large datasets, data cleaning, preprocessing, and transformation for ML workflows.
-# SQL & APIs: Proficiency in writing SQL queries and integrating ML models with APIs or backend systems.
-# Version Control & Collaboration: Familiarity with Git and collaborative model development practices.
-# Analytical Thinking: Strong problem-solving skills with the ability to translate business problems into data-driven ML solutions.
-
-
-# Preferred Qualifications:
-
-# Education: Bachelor’s or Master’s degree in Computer Science, Data Science, Mathematics, or a related quantitative field.
-# Experience: Min2 years of experience in machine learning, data analytics, or applied statistics roles.
-# Cloud Platforms: Exposure to AWS, GCP, or Azure for model deployment or data processing.
-# Domain Knowledge: Familiarity with fintech, credit risk, or business analytics domains.
-# Automation & MLOps: Basic understanding of model deployment, monitoring, or pipeline automation tools.
-# Continuous Learning: Enthusiasm for exploring new ML algorithms, open-source tools, and emerging technologies in data science.   
 # """)
 #     jd_data = jd_obj.jd_data()
+    
 #     llm_jd_obj = Parse_Jd_Data(jd_data)
 #     llm_jd_response = llm_jd_obj.llm_jd_parser()
-#     validate_jd_obj = Validate(llm_jd_response)
-#     validated_jd = validate_jd_obj.data_validation()
-#     normalize_jd_obj = Normalize(validated_jd)
-#     normalized_jd = normalize_jd_obj.normalize_jd()
-#     score_obj = Candidate_Score(normalized_resume_data, normalized_jd)
-#     cand_score = score_obj.experience_score()
+#     # print(f"llm_jd_response: {llm_jd_response}")
     
-    shutil.rmtree(temp_dir) 
+#     validate_jd_obj = Validate(llm_jd_response)
+#     validated_jd_data = validate_jd_obj.jd_data_validation()
+
+#     normalize_jd_obj = Normalize(validated_jd_data)
+#     normalized_jd_data = normalize_jd_obj.normalize_jd()
+#     # print(f"\njd data: {normalized_jd_data}\n")
+    
+#     score_obj = Candidate_Score(normalized_resume_data, normalized_jd_data)
+#     candidate_score = score_obj.education_score()
+#     fail_fast_candidate_obj = Fail_Fast(candidate_score)
+#     rejected_candidate = fail_fast_candidate_obj.hard_fail_candidate()
+#     if rejected_candidate is False:
+#         current_score_points, total_score_points = score_obj.candidate_total_score()
+#         classify_obj = Classify(current_score_points, total_score_points)
+#         classified_candidate = classify_obj.route_candidate()
+    
+    
+#     # print(f"classified_candidate: {classified_candidate}")
+    
+    
+#     shutil.rmtree(temp_dir) 
             
-            
+#     # Next Task: order the degree rank and point each degree or figure out,
+#     # exp dates calculation
+#     # give 20Rs to Anifa

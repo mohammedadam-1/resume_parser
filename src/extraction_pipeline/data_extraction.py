@@ -1,18 +1,19 @@
 import os 
 import sys 
-from pathlib import Path 
 from src.exception import CustomException 
 from src.logger import logging 
-from src.utils import route_filetype
+from src.utils import route_filetype, check_file_len
+from models.schemas import FilePath
+from fastapi import HTTPException
+from pydantic import BaseModel
 
 
-class Extract():
-    def __init__(self, file_path):
-        self.file_path = file_path 
+
+class Extract(BaseModel):
+    file_path: str
         
-    def extract_text(self):
-        """Pass the file path to their specific file extractors,
-        and return the extracted content"""
+    def extract_text(self) -> str:
+        """Extract text from the given file based on its type."""
         
         try:
             
@@ -20,9 +21,13 @@ class Extract():
                 raise FileNotFoundError(f"The specified path was not found: {self.file_path}")
             
             file_content = route_filetype(self.file_path)
-        
+            check_file_len(file_content)    
             logging.info('extracted content from the file')
+            
             return file_content
+        
+        except HTTPException:
+            raise
         
         except Exception as e:
             logging.info('failed to extract content from the file')

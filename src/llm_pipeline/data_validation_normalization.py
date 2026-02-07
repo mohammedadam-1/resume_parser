@@ -1,146 +1,88 @@
-import os 
 import sys 
 from src.exception import CustomException
 from src.logger import logging
-from typing import List
 import re
 from src.utils import _recursive_strip, _recursive_lower
-import json
+from pydantic import BaseModel, Field, field_validator
+from typing import Any
 
-class Validate():
-    def __init__(self, data: dict):
-        self.data = data
-        
-        
-    def data_validation(self) -> dict:
-        
-        try:
-            
-            if not isinstance(self.data, dict):
-                raise TypeError(f"Expected 'dict', but got '{type(self.data).__name__}'")
-            
-            logging.info('json data loaded for validation')
-            
-            invalid_values = ["", " ", [], "missing", "null", None, 0]
-            
-            resume_list = ["name", "emails", "phone_numbers", "linkedin_url", "github_url", "skills",
-                           "certifications", "other_info"]
-            for item in resume_list:
-                if item in self.data:
-            
-                    if self.data["name"] in invalid_values or isinstance(self.data['name'], int):
-                        self.data["name"] = None
-                    if self.data["emails"] in invalid_values or isinstance(self.data['emails'], int):
-                        self.data["emails"] = []
-                    if self.data["phone_numbers"] in invalid_values:
-                        self.data["phone_numbers"] = []
-                    if self.data["linkedin_url"] in invalid_values or isinstance(self.data['linkedin_url'], int):
-                        self.data["linkedin_url"] = None
-                    if self.data["github_url"] in invalid_values or isinstance(self.data['github_url'], int):
-                        self.data["github_url"] = None 
-                    if self.data["skills"] in invalid_values or isinstance(self.data['skills'], int):
-                        self.data["skills"] = []
-                        
-                    if "projects" in self.data:
-                        for item in self.data["projects"]:
-                            for key, value in item.items():
-                                if key == "title":
-                                    if value in invalid_values or isinstance(value, int):
-                                        value = None
-                                if key == "technologies":
-                                    if value in invalid_values or isinstance(value, int):
-                                        value = []
-                                if key == "description":
-                                    if value in invalid_values or isinstance(value, int):
-                                        value = []          
-                            
-                    if "experience" in self.data:    
-                        for item in self.data["experience"]:
-                            for key, value in item.items():
-                                if key == "company":
-                                    if value in invalid_values or isinstance(value, int):
-                                        value = None
-                                if key == "role":
-                                    if value in invalid_values or isinstance(value, int):
-                                        value = None
-                                if key == "responsibilities":
-                                    if value in invalid_values or isinstance(value, int):
-                                        value = []   
-                                if key == "duration_months":
-                                    if value in invalid_values:
-                                        value = None                 
-                            
-                    if self.data["certifications"] in invalid_values or isinstance(self.data["certifications"], int):
-                        self.data["certifications"] = []
-                    if "education" in self.data:    
-                        for item in self.data["education"]:
-                            for key, value in item.items():
-                                if key == "degree":
-                                    if value in invalid_values or isinstance(value, int):
-                                        value = None
-                                if key == "institution":
-                                    if value in invalid_values or isinstance(value, int):
-                                        value = None
-                                if key == "details":
-                                    if value in invalid_values or isinstance(value, int):
-                                        value = None         
-                                        
-                    if self.data["other_info"] in invalid_values:
-                        self.data["other_info"] = []  
-            
-        # check for validation of JD data
-            jd_list = ["job_title", "required_skills", "preferred_skills", "min_experience_months",
-                       "experience_requirements", "required_education", "keywords"]
-            for item in jd_list:
-                
-                if item in self.data:
-                    
-                    if self.data["job_title"] in invalid_values or isinstance(self.data["job_title"], int):
-                        self.data["job_title"] = None 
-                        
-                    if self.data["required_skills"] in invalid_values or isinstance(self.data["required_skills"], int):
-                        self.data["required_skills"] = []
-                        
-                    if self.data["preferred_skills"] in invalid_values or isinstance(self.data["preferred_skills"], int): 
-                        self.data["preferred_skills"] = []
-                        
-                    if self.data["min_experience_months"] in invalid_values:
-                        self.data["min_experience_months"] = None
-                        
-                    if self.data["experience_requirements"] in invalid_values or isinstance(self.data["experience_requirements"], int):   
-                        self.data["experience_requirements"] = []
-                        
-                    if self.data["required_education"] in invalid_values or isinstance(self.data["required_education"], int): 
-                        self.data["required_education"] = None 
-                        
-                    if self.data["keywords"] in invalid_values or isinstance(self.data["keywords"], int):    
-                        self.data["keywords"] = []
-                    
-                        
-            logging.info("checked for validation of data") 
-            
-                                          
-            return self.data                                
-                                
-        except Exception as e:
-            logging.info("error: check for validation pipeline")
-            raise CustomException(e, sys)  
-        
-        
-class Normalize():
-    def __init__(self, data: dict):
-        self.data = data
+class Projects(BaseModel):
+    title: str | None = None
+    technologies: list[str] = Field(default_factory=list)
+    description: list[str] = Field(default_factory=list)
+    
+class Education(BaseModel):
+    degree_level: str | None = None
+    degree_name: str | None = None
+    field: str | None = None
+    
+class Experience(BaseModel):
+    company: str | None = None
+    role: str | None = None
+    responsibilities: list[str] = Field(default_factory=list)
+
+
+class ResumeSchema(BaseModel):
+    name: str | None = None
+    emails: list[str] = Field(default_factory=list)
+    phone_numbers: list[str] = Field(default_factory=list)
+    linkedin_url: str | None = None
+    github_url: str | None = None
+    skills: list[str] = Field(default_factory=list)
+    education: list[Education] = Field(default_factory=list)
+    projects: list[Projects] = Field(default_factory=list)
+    total_experience_months: int | None = None
+    experience: list[Experience] = Field(default_factory=list)
+    certifications: list[str] = Field(default_factory=list) 
+    keywords: list[str] = Field(default_factory=list)
+
+    @field_validator('emails', 'phone_numbers', 'skills', 'education', 'projects', 'experience', 'certifications', 'keywords', mode='before')
+    @classmethod
+    def ensure_list(cls, v: Any) -> Any:
+        if v is None:
+            return []
+        return v
+
+class ValidateResume(BaseModel):
+    data: ResumeSchema
+  
+  
+class RequiredEducation(BaseModel):
+    degree_level: str | None = None
+    degree_name: str | None = None
+    field: str | None = None
+    
+class JdSchema(BaseModel):
+    job_title: str | None = None
+    required_skills: list[str] = Field(default_factory=list)
+    preferred_skills: list[str] = Field(default_factory=list)
+    min_experience_months: int | None = None
+    experience_requirements: list[str] = Field(default_factory=list)
+    required_education: list[RequiredEducation] = Field(default_factory=list)
+    keywords: list[str] = Field(default_factory=list)
+    
+    @field_validator('required_education', 'required_skills', 'preferred_skills', 'keywords', mode='before')
+    @classmethod
+    def ensure_list(cls, v: Any) -> Any:
+        if v is None:
+            return []
+        return v
+    
+class ValidateJd(BaseModel):   
+    data: JdSchema
+    
+  
+class NormalizeResume(BaseModel):
+    data: ResumeSchema
     
     
-    def str_norm(self) -> dict:
-        """normalize the strings data"""
+    def str_norm(self) -> ResumeSchema:
+        """Strip whitespaces and normalize the strings data"""
         try:
+            temp_dict = self.data.model_dump()
+            cleaned_dict = _recursive_strip(temp_dict)
             
-            if not isinstance(self.data, dict):
-                raise TypeError(f"Expected 'dict', but got '{type(self.data).__name__}'")
-        
-            self.data = _recursive_strip(self.data)
-           
+            self.data = self.data.__class__(**cleaned_dict)            
             logging.info("Cleaned and returned 'str' type data")
             
             return self.data
@@ -150,106 +92,133 @@ class Normalize():
             raise CustomException(e, sys)
             
       
-    def number_normalization(self) -> dict:
+    def number_normalization(self) -> ResumeSchema:
         """normalize the numbers into readable format"""
         
         try:
             logging.info("initialized number normalization")
-            data = self.str_norm()
+            model = self.str_norm()
             
-            if not isinstance(data, dict):
-                raise TypeError(f"Expected 'dict', but got '{type(data).__name__}'")
-            logging.info("data loaded for number normalization")
-            
-            for key, value in data.items():
-                if key == "phone_numbers":
-                    data[key] = list(set([re.sub(r'\D', '', item) for item in value]))
-                            
-            logging.info("normalized phone numbers data") 
-             
-            return data
+            if model.phone_numbers:
+                normalized_numbers = [re.sub(r"\D","", str(item)) for item in model.phone_numbers]
+                logging.info("normalized phone numbers data") 
+                model.phone_numbers = list(set(normalized_numbers)) 
+                
+            return model
 
         except Exception as e:
             logging.info("Unable to normalize numbers data")
             raise CustomException(e, sys)    
         
-    def emails(self) -> dict:
-        """normalize emails and return data"""
+    def emails(self) -> ResumeSchema:
+        """validate and normalize emails and return data"""
         try:
             
             logging.info("Initialized emails normalization")
-            data = self.number_normalization()
-            
-            if not isinstance(data, dict):
-                raise TypeError(f"Expected 'dict', but got '{type(data).__name__}'")
+            model = self.number_normalization()
             
             logging.info("loaded data for emails normalization")
             
             atTheRate = "@"
-            for key, value in data.items():
-                if key == "emails":
-                    data[key] = list(set([item.lower() for item in value if atTheRate in item]))
+            if model.emails:
+                model.emails = list(set([item.lower() for item in model.emails if atTheRate in item]))
             
             logging.info("Normalized and returned emails data")    
-            return data
+            return model
             
         except Exception as e:
             logging.info("Unable to normalize emails, please debug")
             raise CustomException(e, sys)  
-        
-    def skills(self) -> dict:
-        """normalize the skills data and return data"""   
+    
+    def lower_keys(self) -> ResumeSchema:
+        """lower the values of keys"""
         
         try:
+            model = self.emails()
+            temp_dict = model.model_dump()
+            normalized_dict = _recursive_lower(temp_dict)
+            logging.info("lowered the values of keys")  
             
-            data = self.emails()
-            for key, value in data.items():
-                if key == "skills":
-                    data[key] = list(set([item.lower() for item in value]))
-            logging.info("normalized skills data")
-            
-            return data        
-            
+            model = model.__class__(**normalized_dict)
+                  
+            return model
+        
         except Exception as e:
-            logging.info("Unable to normalize skills data, please debug")
+            logging.info("Unable to lower the keys")
             raise CustomException(e, sys)
         
-    def projects(self) -> dict:
+    def remove_duplicates(self) -> ResumeSchema:
+        """Remove duplicates from the list"""    
         
-        data = self.skills()
-        
-        for key, value in data.items():
-            if key == "projects":
-                data[key] = _recursive_lower(value)
-       
-        logging.info("normalized the strings to lower")  
-       
-        return data
-
-    def normalize_jd(self) -> dict:
-        """normalize the JD data and return data"""
+        try:
+            model = self.lower_keys()
+            target_keys = {"skills", "certifications", "keywords"}
+            for key, value in model:
+                if key in target_keys:
+                    deduplicated = list(set(value))
+                    setattr(model, key, deduplicated)
+            logging.info("Successfully deduplicated target fields")
+                 
+            return model           
+            
+        except Exception as e:
+            logging.info("Unable to remove duplicates")
+            raise CustomException(e, sys)
+     
+class NormalizeJd(BaseModel):
+    data: JdSchema
+    
+    def strip_str(self) -> JdSchema:
+        """normalize the str type and return data"""
 
         try:
             logging.info("Initialized JD data normalization")
-
-            if not isinstance(self.data, dict):
-                raise TypeError(f"Expected 'dict', but got '{type(self.data).__name__}'")
-
-            logging.info("loaded data for JD normalization") 
-
-            data = self.str_norm()   
+            temp_dict = self.data.model_dump() 
+            logging.info("loaded data for str normalization")    
+            cleaned_dict = _recursive_strip(temp_dict)     
             
-            for key, value in data.items():
-                if key == "required_skills" or key == "preferred_skills" or key == "keywords":
-                    data[key] = _recursive_lower(value) 
-            
-            logging.info("normalized the JD data")
-
-            return data
+            self.data = self.data.__class__(**cleaned_dict)
+            logging.info("normalized str and returned data")
+            return self.data
 
         except Exception as e:
-            logging.info("Unable to normalize JD data, please debug")
+            logging.info("Unable to normalize str, please debug")
             raise CustomException(e, sys)    
+        
+    def lowerjd_keys(self) -> JdSchema:
+        """lower the keys in Jd and return"""
+        
+        try:
+            model = self.strip_str()
+            temp_dict = model.model_dump()
+            normalized_dict = _recursive_lower(temp_dict)
+            logging.info("lowered the values of keys")  
+            
+            model = model.__class__(**normalized_dict)     
+            return model
+            
+        except Exception as e:
+            logging.info("Unable to lower keys, please debug")
+            raise CustomException(e, sys)
+        
+    def removejd_duplicates(self) -> JdSchema:
+        """remove duplicates from Jd keys"""
+        
+        try:
+            model = self.lowerjd_keys()
+            target_keys = {"required_skills", "preferred_skills", "keywords"}
+            
+            for key, value in model:
+                if key in target_keys:
+                    deduplicated = list(set(value))
+                    setattr(model, key, deduplicated)  
+            logging.info("removed duplicates from the Jd keys")
+            return model      
+            
+        except Exception as e:
+            logging.info("Unable to remove duplicates")
+            raise CustomException(e, sys)    
+            
             
             
 

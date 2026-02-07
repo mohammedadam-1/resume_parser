@@ -1,33 +1,35 @@
 import os 
 import sys 
-from pathlib import Path
 from src.exception import CustomException
 from src.logger import logging
 from groq import Groq
 from dotenv import load_dotenv
 load_dotenv()
-import json
+from src.utils import parse_experience_from_resume
+from src.utils import safe_json_loads
+from pydantic import BaseModel, PrivateAttr, Field, ConfigDict
 
 
-
-class Parse_Resume_Data():
+class ParseResumeData(BaseModel):
+    data: str # default none and break loop
+    model: str = "openai/gpt-oss-120b"
+    _client: Groq = PrivateAttr()
+     # Configuration to allow the custom Groq type
+    model_config = ConfigDict(arbitrary_types_allowed=True) 
     
-    def __init__(self, data:str) -> dict:
-        self.data = data
-        self.model = "openai/gpt-oss-120b"
-        self.client = Groq()
+    def model_post_init(self, _):
+        api_key = os.getenv('GROQ_API_KEY')
+        if not api_key:
+            raise ValueError("GROQ_API_KEY environment variable is not set")
         
-    def llm_resume_parser(self):
+        self._client = Groq(
+                api_key=api_key
+            )
+        
+    def llm_resume_parser(self) -> dict:
         """Parses the string data into a JSON object"""
         
         try:
-            
-            if not isinstance(self.data, str):
-                raise TypeError(f"Expected 'str', but got '{type(self.data).__name__}'")
-            
-            client = Groq(
-                api_key=os.getenv('GROQ_API_KEY')
-            )
             
             output_schema = {
                 "name": "",
@@ -44,18 +46,19 @@ class Parse_Resume_Data():
                         "company": "",
                         "role": "",
                         "responsibilities": [],
-                        "duration_months": 0
                     },
                 ],
+                "total_experience_months": None,
                 "certifications": [],
-                "education": [{"degree": "",
-                               "institution": "",
-                               "details": ""},],
-                "other_info": []
+                "education": [{"degree_level": "",
+                               "degree_name": "",
+                               "field": ""},],
+                "keywords": []
                 
             }
             
             system_prompt = f"""
+
 You are a resume parsing and normalization engine.
 
 Your task is to extract information from the provided resume content and return
@@ -83,46 +86,68 @@ SKILLS EXTRACTION & EXPANSION RULES
 
 The "skills" field must contain a normalized list of technical skills.
 
-When extracting skills:
-
-1. Include ONLY skills that are explicitly mentioned in the resume.
+1. Include ONLY skills explicitly mentioned in the resume.
 2. You MAY expand a skill ONLY into:
    - common abbreviations
    - common aliases
    - atomic components of the same skill
-3. Do NOT add related but unmentioned technologies.
-4. Do NOT infer skills from:
-   - job titles
-   - company names
-   - responsibilities
-   - tools commonly associated with a role
+3. Do NOT add related or unmentioned technologies.
+4. Do NOT infer skills from job titles, companies, or responsibilities.
 5. Do NOT infer proficiency or seniority.
-6. Each skill token must be:
+6. Skill tokens must be:
    - lowercase
    - concise (1–4 words)
-   - technically equivalent to the original skill
-7. Limit expansion to a SMALL and CONTROLLED set:
-   - Maximum 6 tokens per original skill (including the original).
+   - technically equivalent
+7. Limit expansion to a maximum of 6 tokens per original skill.
 8. Remove duplicates after expansion.
 
-Examples (for guidance only):
-
-- "AWS Lambda" → ["aws lambda", "aws", "lambda", "serverless"]
-- "LLMs" → ["llms", "large language models", "language models"]
-- "CI/CD" → ["ci/cd", "cicd", "ci", "cd"]
-- "Python" → ["python"]
-
-If no valid expansion exists, include ONLY the original skill.
-
 ====================
-EXPERIENCE & EDUCATION RULES
+EXPERIENCE RULES
 ====================
 
-- Do NOT infer years of experience unless explicitly stated.
-- Do NOT infer per-skill experience.
-- Do NOT guess education levels or degrees.
-- Preserve education and experience exactly as written, without enrichment.
-- Extract all the Experience And Education if the resume has multiple experience and education as list of dictionaries mentioned in output_schema
+- Extract experience entries as written.
+- Do NOT infer years, durations, or seniority.
+- You MUST NOT extract or reason about experience dates.
+- For ALL experience entries, set all date-related fields to null.
+- Date extraction and experience calculation are handled externally.
+
+====================
+EDUCATION EXTRACTION RULES (IMPORTANT)
+====================
+
+1. Extract ONLY the highest completed or currently pursuing qualification.
+2. Ignore lower or earlier qualifications once the highest is identified.
+3. Do NOT infer or guess degree level, field, or institution.
+4. Preserve wording exactly as written where applicable.
+5. Normalize degree level into ONE of:
+   - phd
+   - masters
+   - bachelors
+   - diploma
+   - high_school
+
+6. Extract ONLY the primary field / specialization (if explicitly stated).
+7. Do NOT infer related or equivalent fields.
+8. Institution name must be extracted only if explicitly mentioned.
+9. Graduation year must be extracted only if explicitly mentioned; otherwise null.
+10. Do NOT rank or judge institutions.
+11. Do NOT extract multiple education entries.
+
+====================
+KEYWORDS RULES
+====================
+
+The "keywords" field is for SOFT relevance signals ONLY.
+
+1. Extract short, meaningful keywords explicitly mentioned in the resume.
+2. Keywords must be:
+   - lowercase
+   - concise (1–3 words)
+3. Do NOT include any keyword already present in:
+   - required_skills
+   - preferred_skills
+4. Do NOT infer new keywords.
+5. Keywords must NOT affect hard constraints.
 
 ====================
 OUTPUT SCHEMA
@@ -133,8 +158,7 @@ Return the result strictly in the following JSON schema:
 {output_schema}
 """
 
-            
-            response = client.chat.completions.create(
+            response = self._client.chat.completions.create(
                 messages=[
                     {
                         'role':'system',
@@ -150,21 +174,39 @@ Return the result strictly in the following JSON schema:
             
             logging.info(f"received response from {self.model} LLM")
             json_data =  response.choices[0].message.content
-            data = json.loads(json_data)
+            data = safe_json_loads(json_data)
             logging.info("loaded json object as python dict")
             
-            return data
+            llm_response = self.load_candidate_experience(data)
+            logging.info("loaded experience of candidate and returned llm response")
             
+            return llm_response
             
         except Exception as e:
             logging.info("Unable to receive LLM response")
             raise CustomException(e, sys)  
         
-class Parse_Jd_Data():
+    def load_candidate_experience(self, llm_data:dict) -> dict:
+        """Load and store the candidate experience in duration_months"""
+        try:
+            
+            total_exp = parse_experience_from_resume(self.data)
+            llm_data["total_experience_months"] = total_exp
+            return llm_data
+        
+        except Exception as e:
+            logging.info("Failed to load candidate experience in 'total_experience_months'")
+            raise CustomException(e, sys)
     
-    def __init__(self, data):
-        self.data = data 
-        self.model = "openai/gpt-oss-120b"
+class ParseJdData(BaseModel):
+    data: str = Field(min_length=1)
+    model: str = "openai/gpt-oss-120b"
+    _client: Groq = PrivateAttr()
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    def model_post_init(self, _):
+        api_key = os.getenv("GROQ_API_KEY")
+        self._client = Groq(api_key=api_key)
                 
     def llm_jd_parser(self) -> dict:
         """Parses the JDs and returns a json object"""
@@ -180,7 +222,10 @@ class Parse_Jd_Data():
                 "preferred_skills": [],
                 "min_experience_months": int,
                 "experience_requirements": [],
-                "required_education": "",
+                "required_education": 
+                    [{"degree_level": "",
+                      "degree_name": "",
+                      "field": ""},],
                 "keywords": []
             }
             
@@ -284,12 +329,24 @@ EXPERIENCE RULES
 - Preserve other experience-related statements as human-readable strings in "experience_requirements".
 
 ====================
-EDUCATION RULES
+EDUCATION EXTRACTION RULES
 ====================
 
-- Populate "required_education" ONLY if an explicit education requirement is stated.
-- If not stated, set "required_education" to null.
-- Do NOT infer education requirements.
+1. Extract ONLY the minimum required qualification mentioned in the job description.
+2. Extract degree_level strictly as one of:
+   - phd
+   - masters
+   - bachelors
+   - diploma
+   - high_school
+3. Extract ONLY the primary field / specialization (if explicitly stated).
+4. Do NOT infer related or equivalent fields.
+5. Institution name must be extracted only if explicitly mentioned.
+6. Graduation year must be extracted only if explicitly mentioned; otherwise null.
+7. Do NOT rank or judge institutions.
+8. Do NOT extract multiple education entries.
+9. If the job description has NO education requirement, set the entire education object to null.
+
 
 ====================
 KEYWORDS RULES
@@ -315,11 +372,7 @@ Return the result strictly in the following JSON schema:
 
 {jd_schema}
 """
-
-
-            
-            client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-            response = client.chat.completions.create(
+            response = self._client.chat.completions.create(
                 messages=[
                     {
                         "role": "system",
@@ -334,12 +387,13 @@ Return the result strictly in the following JSON schema:
             )
             
             json_data = response.choices[0].message.content
-            data = json.loads(json_data)
-            logging.info("llm parsed and returned JD as json object")
+            logging.info("Llm parsed and returned JD as json object")
+            
+            data = safe_json_loads(json_data)  
+            logging.info("Loaded json obj into python dict")                              
             
             return data
             
-        
         except Exception as e:
             logging.info("llm Failed to parse JD")
             raise CustomException(e, sys)      
