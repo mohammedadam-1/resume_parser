@@ -30,22 +30,22 @@ def run_pipeline(resume_bytes: bytes, jd_text: str):
         temp_dir = tempfile.mkdtemp()
         resume_path = f"{temp_dir}/resume.pdf"  # OK for now
 
-        # 1️⃣ WRITE FILE FIRST
+        # 1️ WRITE FILE FIRST
         with open(resume_path, "wb") as f:
             f.write(resume_bytes)
 
-        # 3️⃣ Resume extraction
+        # 2 Resume extraction
         extract_obj = Extract(file_path=resume_path)
         resume_text = extract_obj.extract_text()
 
-        # 4️⃣ Resume LLM parsing
+        # 3 Resume LLM parsing
         llm_resume = ParseResumeData(data=resume_text)
         resume_llm_output = llm_resume.llm_resume_parser()
 
         validated_output = ValidateResume(data=resume_llm_output).data
         normalized_resume = NormalizeResume(data=validated_output).remove_duplicates()
 
-        # 5️⃣ JD parsing
+        # 4 JD parsing
         jd_obj = Jd_Parsing(data=jd_text)
         jd_raw = jd_obj.jd_data()
 
@@ -55,7 +55,7 @@ def run_pipeline(resume_bytes: bytes, jd_text: str):
         validatedJd_output = ValidateJd(data=jd_llm_output).data
         normalized_jd = NormalizeJd(data=validatedJd_output).removejd_duplicates()
 
-        # 6️⃣ Scoring + hard-fail
+        # 5 Scoring + hard-fail
         scorer = Candidate_Score(resume_data=normalized_resume, jd_data=normalized_jd)
         current_points = scorer.education_score()
         
@@ -66,7 +66,7 @@ def run_pipeline(resume_bytes: bytes, jd_text: str):
                                                             
         current_points, total_points = scorer.candidate_total_score()
 
-        # 7️⃣ Classification
+        # 6 Classification
         classifier = Classify(current_points=current_points, total_points=total_points)
         result = classifier.classified_candidate()
 

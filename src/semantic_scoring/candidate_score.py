@@ -28,7 +28,6 @@ class Candidate_Score(BaseModel):
         self._model = SHARED_MODEL
         
            
-    
     def skills_score(self) -> dict[str, float]:
         """Calculate the Score for candidate's skills and assign points accordingly"""
         try:
@@ -41,76 +40,167 @@ class Candidate_Score(BaseModel):
             preferred_skills = set(self.jd_data.preferred_skills)
             logging.info("Loaded required skills and preferred skills for scoring")
             
-            matched_required_skills = candidate_skills & required_skills
-            # print(f"matched_required_skills: {matched_required_skills}")
-            logging.info("Matched candidate skills & required skills")
+            req_score_list = []
+            pref_score_list = []
+            
+            logging.info("Intialized skills matching for required_skills using sets, for exact str match")  
+            
             if len(required_skills) > 0:
+                matched_required_skills = candidate_skills & required_skills
+                logging.info("Matched candidate skills & required skills")
                 ratio_req = len(matched_required_skills) / len(required_skills)
-                # print("matched required skills: ",matched_required_skills)
-                score_req = ratio_req * 50.0
-                logging.info("Calculated the score for matched_required_skills")
-                # print(f"score_required_skills: {round(score_req,1)}")
+        
+                score_req = round(ratio_req * 50.0, 2)
+                logging.info("Calculated the score for matched required_skills")
+                req_score_list.append(score_req)
+                
+                if len(candidate_skills) > 0:
+                    logging.info("Initialized semantic skills matching for required_skills using cosine similariy")
+                    embed_candidate_skills = ", ".join(list(candidate_skills))
+                    candidate_skills_embedding = self._model.encode(embed_candidate_skills, convert_to_tensor=True)
+                    embed_required_skills = ", ".join(list(required_skills))
+                    required_skills_embedding = self._model.encode(embed_required_skills, convert_to_tensor=True) 
+                    cos_score_req = util.cos_sim(candidate_skills_embedding, required_skills_embedding)
+                    logging.info("Calculated the cosine similariy score for required_skills")
+                    
+                    if cos_score_req >= 0.90:
+                        score = 50.0
+                        req_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in required_skills")
+                    elif cos_score_req >= 0.80:
+                        score = 40.0
+                        req_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in required_skills")
+
+                    elif cos_score_req >= 0.70:
+                        score = 30.0
+                        req_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in required_skills")
+
+                    elif cos_score_req >= 0.60:
+                        score = 20.0 
+                        req_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in required_skills")
+                          
+                    elif cos_score_req >= 0.50:
+                        score = 10.0 
+                        req_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in required_skills")
+                              
+                    else:
+                        score = 5.0
+                        req_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in required_skills")
+                        
+                    
+                    req_score_list = round(float(sum(req_score_list) / 2), 2)    
+                    self.current_points["required_skills"] = req_score_list
+                
             else:
                 score_req = 0.0
                 logging.info("Assigned score = 0.0 as len of required_skills is 0")
-               
-            
-            matched_preferred_skills = candidate_skills & preferred_skills
-            logging.info("Matched candidate skills & preferred skills")
-            
-            if len(preferred_skills) > 0:
-                ratio_pref = len(matched_preferred_skills) / len(preferred_skills)
-                # print("matched preferred skills: ",matched_preferred_skills)
-                score_pref = ratio_pref * 15.0
-                logging.info("Calculated the score for matched_preferred_skills")
                 
-                # print(f"score_preferred_skills: {round(score_pref, 1)}")
+                self.current_points["required_skills"] = score_req
+               
+            logging.info("Intialized skills matching for preferred_skills using sets, for exact str match")    
+                 
+            if len(preferred_skills) > 0:
+                matched_preferred_skills = candidate_skills & preferred_skills                  
+                logging.info("Matched candidate skills & preferred skills")
+                ratio_pref = len(matched_preferred_skills) / len(preferred_skills)
+                score_pref = ratio_pref * 15.0
+                logging.info("Calculated the score for matched preferred_skills")
+                
+                if len(candidate_skills) > 0:
+                    logging.info("Initialized semantic skills matching for preferred_skills using cosine similariy")
+                    embed_preferred_skills = ", ".join(list(preferred_skills))
+                    preferred_skills_embedding = self._model.encode(embed_preferred_skills, convert_to_tensor=True)
+                    cos_score_pref = util.cos_sim(candidate_skills_embedding, preferred_skills_embedding)
+                    logging.info("Calculated the cosine similariy score for preferred_skills")
+
+                
+                    if cos_score_pref >= 0.90:
+                        score = 50.0
+                        pref_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in preferred_skills")
+                    elif cos_score_pref >= 0.80:
+                        score = 40.0
+                        pref_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in preferred_skills")
+
+                    elif cos_score_pref >= 0.70:
+                        score = 30.0
+                        pref_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in preferred_skills")
+
+                    elif cos_score_pref >= 0.60:
+                        score = 20.0 
+                        pref_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in preferred_skills")
+                          
+                    elif cos_score_pref >= 0.50:
+                        score = 10.0 
+                        pref_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in preferred_skills")
+                              
+                    else:
+                        score = 5.0
+                        pref_score_list.append(score)
+                        logging.info(f"{score} points assigned to candidate for semantic similarity in preferred_skills")
+                        
+                    
+                    pref_score_list = round(float(sum(pref_score_list) / 2), 2)    
+                    self.current_points["preferred_skills"] = pref_score_list
+                
             else:
                 score_pref = 0.0
+                self.current_points["preferred_skills"] = score_pref
                 logging.info("Assigned score = 0.0 as len of preferred_skills is 0")
-                
             
-            self.current_points["required_skills"] = round(score_req,2)
-            self.current_points["preferred_skills"] = round(score_pref,2)
             
-            logging.info("Scored and returned candidate skills") 
+            logging.info("Scored and returned candidate's required_skills & preferred_skills") 
             return self.current_points             
         
         except Exception as e:
-            logging.info("Unable to score candidate experience") 
+            logging.info("Unable to score candidate's skill section") 
             raise CustomException(e, sys)
 
     def experience_score(self) -> dict[str, float]:
         """Calculate the Score for candidate's total experience(months) and assign points accordingly"""
         try: 
-            
+            logging.info("Initialized scoring for candidate's experience_score")
             current_points = self.education_score()
-            
+            logging.info("Loaded current_points from education_score")
             required_months = self.jd_data.min_experience_months or 0
+            logging.info("Loaded required_months experience from JD")
             half_req = required_months / 2 # Half months required of total required months in JD
-            
+            logging.info("Calculated half of required_months for scoring")
             candidate_experience = self.resume_data.total_experience_months or 0
+            logging.info("Loaded candidate_experience from Resume")
             
             if candidate_experience >= required_months:
                 score = 15.0
+                logging.info(f"Assigned {score} points for min_experience_months")
                 current_points["min_experience_months"] = score
                 
             elif candidate_experience >= half_req:
                 score = 10.0
+                logging.info(f"Assigned {score} points for min_experience_months")
                 current_points["min_experience_months"] = score
                 
             elif candidate_experience > 0 and candidate_experience < half_req:
                 score = 5.0
+                logging.info(f"Assigned {score} points for min_experience_months")
                 current_points["min_experience_months"] = score
                        
             else:
                 score = 0.0
+                logging.info(f"Assigned {score} points for min_experience_months")
                 current_points["min_experience_months"] = score
              
             logging.info("Scored and returned candidate experience")    
             return current_points    
             
-           
         except Exception as e:
             logging.info("Unable to calculate and score candidate experience")
             raise CustomException(e, sys)
@@ -119,32 +209,34 @@ class Candidate_Score(BaseModel):
         """Calculate the score for candidate's education and assign points accordingly"""  
         
         try:
-            
+            logging.info("Initialized scoring for candidate's education_score section")
             current_points = self.skills_score()
+            logging.info("Loaded current_points from skills_score")
             
             try:
                 candidate_qualification = self.resume_data.education[0].degree_level   
+                logging.info("Loaded candidate_qualification from resume")
             except (TypeError, KeyError, IndexError):
                 candidate_qualification = None    
                 
             try:    
                 required_qualification = self.jd_data.required_education[0].degree_level
+                logging.info("Loaded required_qualification from JD")
             except (TypeError, KeyError, IndexError):
                 required_qualification = None  
-                  
-            logging.info(f"loaded candidate_qualification & required_qualification ")
             
             try:
                 candidate_education_field = self.resume_data.education[0].field
+                logging.info("Loaded candidate_education_field")
             except (TypeError, KeyError, IndexError):
                 candidate_education_field = None    
             # print(f"candidate_education_field: {candidate_education_field}")
             try:
                 required_education_field = self.jd_data.required_education[0].field
+                logging.info("Loaded required_education_field")
             except (TypeError, KeyError, IndexError):
                 required_education_field = None    
-            # print(f"required_education_field: {required_education_field}")
-            logging.info(f"loaded candidate_education_field & required_education_field")
+            
             
             if required_qualification is None:
                 current_points["education_required"] = 10.0
@@ -153,7 +245,7 @@ class Candidate_Score(BaseModel):
             
             elif candidate_qualification is None:
                 current_points["education_required"] = 0.0
-                logging.info("0.0 points assigned to candidate for education as required_qualification matched is None")
+                logging.info("0.0 points assigned to candidate for education as candidate_qualification is None")
                 return current_points
             
             elif required_qualification: 
@@ -187,33 +279,35 @@ class Candidate_Score(BaseModel):
                     logging.info("Converted education fields to vectors")
                     cosine_scores = util.cos_sim(required_field_embeddings, candidate_field_embeddings)
                     logging.info("Calculated cosine score using cosine_similariy")
-                    # print(f"required_field_embeddings: {required_field_embeddings}")
-                    # print(f"candidate_field_embeddings: {candidate_field_embeddings}")
-                    # print(f"cosine_scores: {(cosine_scores[0][0])}")
-                    
+            
                     if cosine_scores >= 0.90:
-                        current_points["education_required"] += 7.0
-                        logging.info(f"7.0 points assigned to candidate's education_field")
+                        score = 7.0
+                        current_points["education_required"] += score
+                        logging.info(f"{score} points assigned to candidate's education_field")
                     elif cosine_scores >= 0.80:
-                        current_points["education_required"] += 5.0
-                        logging.info(f"5.0 points assigned to candidate's education_field")
+                        score = 5.0
+                        current_points["education_required"] += score
+                        logging.info(f"{score} points assigned to candidate's education_field")
                     elif cosine_scores >= 0.70:
-                        current_points["education_required"] += 4.0
-                        logging.info(f"4.0 points assigned to candidate's education_field")
+                        score = 4.0
+                        current_points["education_required"] += score
+                        logging.info(f"{score} points assigned to candidate's education_field")
                     elif cosine_scores >= 0.60:
-                        current_points["education_required"] += 3.0 
-                        logging.info(f"3.0 points assigned to candidate's education_field")  
+                        score = 3.0
+                        current_points["education_required"] += score 
+                        logging.info(f"{score} points assigned to candidate's education_field")  
                     elif cosine_scores >= 0.50:
-                        current_points["education_required"] += 2.0 
-                        logging.info(f"2.0 points assigned to candidate's education_field")      
+                        score = 2.0
+                        current_points["education_required"] += score 
+                        logging.info(f"{score} points assigned to candidate's education_field")      
                     else:
-                        current_points["education_required"] += 1.5
-                        logging.info(f"1.5 points assigned to candidate's education_field")     
+                        score = 1.5
+                        current_points["education_required"] += score
+                        logging.info(f"{score} points assigned to candidate's education_field")     
              
             logging.info("Semantically calculated the education field and returned score")   
-            # print(f"self.current_points: {self.current_points}")         
-            return current_points            
-
+                    
+            return current_points     
                 
         except Exception as e:
             logging.info("Unable to compare and score candidate education")
@@ -223,24 +317,26 @@ class Candidate_Score(BaseModel):
         """Calculate the score for keywords present in candidate's resume and JD, assign points accordingly"""  
         
         try:
-            
+            logging.info("Initialized scoring for candidate's keywords_score section")
             current_points = self.experience_score()
             
-            logging.info("Initialized keywords matching and scoring")
+            logging.info("Loaded current_points from experience_score")
             
             candidate_keywords = self.resume_data.keywords
+            logging.info("Loaded candidate_keywords from resume")
             job_desc_keywords = self.jd_data.keywords
-            # print(f"candidate_keywords: {candidate_keywords}")
-            # print(f"job_desc_keywords: {job_desc_keywords}")
-            logging.info("retrieved candidate_keywords and job_desc_keywords for matching")
+            logging.info("Loaded jd_keywords from JD")
             
             if not job_desc_keywords:
-                current_points["keywords"] = 10.0
-                logging.info("10.0 points assigned to candidate's keyword as job_desc_keywords is None")
+                score = 10.0
+                current_points["keywords"] = score
+                logging.info(f"{score} points assigned to candidate's keyword as job_desc_keywords is None")
                 
             elif not candidate_keywords:
-                current_points["keywords"] = 0.0
-                logging.info("0.0 points assigned to candidate's keyword as candidate_keywords is None")
+                score = 0.0
+                current_points["keywords"] = score
+                logging.info(f"{score} points assigned to candidate's keyword as job_desc_keywords is None")
+
                 
             else:
                 embed_candidate_keywords = candidate_keywords
@@ -249,10 +345,9 @@ class Candidate_Score(BaseModel):
                 candidate_keywords_embedding = self._model.encode(embed_candidate_keywords, convert_to_tensor=True) 
                 job_desc_embedding = self._model.encode(embed_job_desc_keywords, convert_to_tensor=True)
                 logging.info("candidate_keywords and job_desc_keywords embeded")
-                # print(f"candidate_keywords_embedding: {candidate_keywords_embedding}")
-                # print(f"\njob_desc_embedding: {job_desc_embedding}")
+            
                 cosine_scores = util.cos_sim(candidate_keywords_embedding, job_desc_embedding)
-                
+                logging.info("Calculated semantic score for keywords")
                 # pick the most matching keywords
                 best_matches_per_keyword, _ = torch.max(cosine_scores, dim=1)
                 logging.info("found the best matched keywords")
@@ -262,7 +357,7 @@ class Candidate_Score(BaseModel):
                 # print(f"final_similarity: {final_similarity * 10}")
                 current_points["keywords"] = round(final_similarity * 10, 2)
                 
-                logging.info("Assigned points to candidate's keywors and returned self.current_points")
+                logging.info("Assigned points to candidate's keywors and returned current_points")
             return current_points
         
         except Exception as e:
@@ -273,13 +368,14 @@ class Candidate_Score(BaseModel):
         """Return current points and the sum of points assigned to candidate"""
         
         try:
+            logging.info("Initialized to sum the points assigned to candidate")
             current_points = self.keywords_score()
-            logging.info("Initialize to sum the points assigned to candidat")
+            logging.info("Loaded current_points from keywords_score")
             
             total_score = sum(current_points.values())
             candidate_total_score = round(total_score, 2)
             
-            logging.info("Retured sum of all points")
+            logging.info("Calculated and retured sum of all points")
             return current_points, candidate_total_score
              
         except Exception as e:

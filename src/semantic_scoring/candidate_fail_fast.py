@@ -16,10 +16,13 @@ class Fail_Fast(BaseModel):
         - dict rejection report if candidate fails
         """
         try:
+            logging.info("Initialized hard fail candidate method")
             candidate_required_skills_score = self.current_points.required_skills
             candidate_education_score = self.current_points.education_required
+            logging.info("Loaded current_points of candidate's required_skills and education")
 
             if candidate_required_skills_score < self.minimum_required_skills_points:
+                logging.info("Candidate failed at required_skills gate")
                 return self.rejected_candidate_report(
                     failed_gate="required_skills",
                     candidate_score=candidate_required_skills_score,
@@ -27,6 +30,7 @@ class Fail_Fast(BaseModel):
                 )
 
             if candidate_education_score < self.minimum_education_points:
+                logging.info("Candidate failed at education gate")
                 return self.rejected_candidate_report(
                     failed_gate="education",
                     candidate_score=candidate_education_score,
@@ -45,7 +49,7 @@ class Fail_Fast(BaseModel):
         """Details of rejected candidate"""    
 
         try:
-            logging.info("Candidate Rejected - Return candidate report")
+            logging.info("Return candidate report")
             return {
                 "status": "rejected",
                 "hard_fail": True,

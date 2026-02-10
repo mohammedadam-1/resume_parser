@@ -34,7 +34,7 @@ class Classify(BaseModel):
         """Compare score and classify candidates"""   
         
         try:        
-            
+            logging.info("Initialized classification of candidate")
             if self.total_points >= 80.0:
                 self.candidate_classification = "Strong Fit"
                 logging.info("Classified candidate as 'Strong Fit'")
@@ -51,50 +51,48 @@ class Classify(BaseModel):
                 self.candidate_classification = "Not a Fit"    
                 logging.info("Classified candidate as 'Not a Fit'")
              
-            logging.info("Returning classified str and total points")    
+            logging.info("Returned classified category and total points")    
             return self.candidate_classification   
                     
         except Exception as e:
             logging.info("Unable to compare score and classify candidate")
             raise CustomException(e, sys) 
         
-    def classified_candidate(self) -> ClassificationResult:
-        """Route candidate"""
+    def classified_candidate(self) -> dict:
+        """Route candidate - Returns dict instead of ClassificationResult"""
         
         try:
             classified_candidate = self.classify_candidate()
-            
-            print(f"classified_candidate as: {classified_candidate} [points scored: {self.total_points}]")
             
             if classified_candidate == "Strong Fit":
                 candidate_details: str = self.candidate_report(self.total_points, classified_candidate).model_dump_json()
                 logging.info("loaded json obj into 'str' in Classify pipeline")
                 
                 with open("Classified_Candidates/Passed/strongFit_candidates.txt", "a") as f:
-                    f.write(candidate_details)
+                    f.write(candidate_details + "\n")
                 logging.info("logged passed candidate details in 'strongFit_candidates.txt'")
                 
-                return self.candidate_report(self.total_points, classified_candidate) 
+                return self.candidate_report_as_dict(self.total_points, classified_candidate)
                  
             elif classified_candidate == "Good Fit":
                 candidate_details: str = self.candidate_report(self.total_points, classified_candidate).model_dump_json()
                 logging.info("loaded json obj into 'str' in Classify pipeline")
                 
                 with open("Classified_Candidates/Passed/goodFit_candidates.txt", "a") as f:
-                    f.write(candidate_details)
+                    f.write(candidate_details + "\n")
                 logging.info("logged passed candidate details in 'goodFit_candidates.txt'")  
                 
-                return self.candidate_report(self.total_points, classified_candidate) 
+                return self.candidate_report_as_dict(self.total_points, classified_candidate)
                 
             elif classified_candidate == "Potential Fit":
                 candidate_details: str = self.candidate_report(self.total_points, classified_candidate).model_dump_json()
                 logging.info("loaded json obj into 'str' in Classify pipeline")
                 
                 with open("Classified_Candidates/Passed/potentialFit_candidates.txt", "a") as f:
-                    f.write(candidate_details)
+                    f.write(candidate_details + "\n")
                 logging.info("logged passed candidate details in 'potentialFit_candidates.txt'")  
                 
-                return self.candidate_report(self.total_points, classified_candidate) 
+                return self.candidate_report_as_dict(self.total_points, classified_candidate)
                 
             else:
                 classified_candidate = "Not a Fit"  
@@ -103,19 +101,19 @@ class Classify(BaseModel):
                 logging.info("loaded json obj into 'str' in Classify pipeline")
                 
                 with open("Classified_Candidates/Failed/NotaFit_candidates.txt", "a") as f:
-                    f.write(candidate_details)
+                    f.write(candidate_details + "\n")
                 logging.info("logged passed candidate details in 'NotaFit_candidates.txt'")       
                 
-                return self.candidate_report(self.total_points, classified_candidate) 
+                return self.candidate_report_as_dict(self.total_points, classified_candidate)
 
         except Exception as e:
-            logging.info("Unable to compare score and classify candidate")
+            logging.info("Unable to write candidate report in file")
             raise CustomException(e, sys)   
         
     def candidate_report(self, total_points, classification) -> ClassificationResult:
-        
+        """Create ClassificationResult for file logging"""
         try:
-            logging.info("Create candidate report")
+            logging.info("Create and return candidate's final report")
             return ClassificationResult(
                 final_score = total_points,
                 classification = classification,
@@ -126,18 +124,31 @@ class Classify(BaseModel):
                     education = self.education_score,
                     keywords = self.keywords_score
                 )
-                   
-                
-                # "top_keyword_matches": [
-                #     ["recommendation systems", "recommender pipelines", 0.88],
-                #     ["model deployment", "serving ml models", 0.84]
-                # ]
             )
     
         except Exception as e:
-            logging.info("Unable to create candidate report")
+            logging.info("Unable to create candidate's final report")
             raise CustomException(e, sys)
-        
-        
     
-    
+    def candidate_report_as_dict(self, total_points, classification) -> dict:
+        """
+        Create dict response for API with hard_fail=False
+        This matches the frontend's expected format
+        """
+        try:
+            logging.info("Creating API response dict with hard_fail=False")
+            return {
+                "hard_fail": False,  
+                "classification": classification,
+                "final_score": f"{total_points:.1f}",  # Format as string
+                "details": {
+                    "required_skills": f"{self.required_skills_score:.1f}",
+                    "preferred_skills": f"{self.preferred_skills_score:.1f}",
+                    "experience": f"{self.experience_score:.1f}",
+                    "education": f"{self.education_score:.1f}",
+                    "keywords": f"{self.keywords_score:.1f}"
+                }
+            }
+        except Exception as e:
+            logging.info("Unable to create API response dict")
+            raise CustomException(e, sys)
