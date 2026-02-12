@@ -18,7 +18,7 @@ async def score_uploaded_resume(
 
         resume_bytes = await resume.read() 
         logging.info("Read bytes from resume file")
-        result = run_pipeline(
+        result = await run_pipeline(
             resume_bytes=resume_bytes,
             jd_text=jd_text
         )

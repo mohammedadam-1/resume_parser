@@ -13,6 +13,7 @@ from pydantic import BaseModel, PrivateAttr, Field, ConfigDict
 class ParseResumeData(BaseModel):
     data: str # default none and break loop
     model: str = "openai/gpt-oss-120b"
+    model_temperature: float = 0.0
     _client: Groq = PrivateAttr()
      # Configuration to allow the custom Groq type
     model_config = ConfigDict(arbitrary_types_allowed=True) 
@@ -38,18 +39,18 @@ class ParseResumeData(BaseModel):
                 "linkedin_url": "",
                 "github_url": "",
                 "skills": [],
-                "projects": [{"title": "",
-                              "technologies_used": [],
-                              "description": []},],
-                "experience": [
-                    {
-                        "company": "",
-                        "role": "",
-                        "responsibilities": [],
-                    },
-                ],
+                # "projects": [{"title": "",
+                #               "technologies_used": [],
+                #               "description": []},],
+                # "experience": [
+                #     {
+                #         "company": "",
+                #         "role": "",
+                #         "responsibilities": [],
+                #     },
+                # ],
                 "total_experience_months": None,
-                "certifications": [],
+                # "certifications": [],
                 "education": [{"degree_level": "",
                                "degree_name": "",
                                "field": ""},],
@@ -96,10 +97,10 @@ The "skills" field must contain a normalized list of technical skills.
 5. Do NOT infer proficiency or seniority.
 6. Skill tokens must be:
    - lowercase
-   - concise (1–4 words)
+   - concise 
    - technically equivalent
 7. Limit expansion to a maximum of 6 tokens per original skill.
-8. Remove duplicates after expansion.
+8. Cross check the extracted skills 
 
 ====================
 EXPERIENCE RULES
@@ -169,7 +170,8 @@ Return the result strictly in the following JSON schema:
                         "content": self.data
                     },
                 ],
-                model=self.model
+                model=self.model,
+                temperature=self.model_temperature
             )
             
             logging.info(f"received response from {self.model} LLM")
@@ -201,6 +203,7 @@ Return the result strictly in the following JSON schema:
 class ParseJdData(BaseModel):
     data: str = Field(min_length=1)
     model: str = "openai/gpt-oss-120b"
+    model_temperature: float = 0.0
     _client: Groq = PrivateAttr()
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
@@ -221,7 +224,7 @@ class ParseJdData(BaseModel):
                 "required_skills": [],
                 "preferred_skills": [],
                 "min_experience_months": int,
-                "experience_requirements": [],
+                # "experience_requirements": [],
                 "required_education": 
                     [{"degree_level": "",
                       "degree_name": "",
@@ -268,7 +271,7 @@ When extracting skills:
    - industry norms
 3. Each skill MUST be:
    - lowercase
-   - concise (1–4 words)
+   - concise 
    - a standalone technical term
 4. Do NOT include:
    - brackets or parentheses
@@ -316,7 +319,6 @@ REQUIRED vs PREFERRED SKILLS
 - Add a skill to "required_skills" ONLY if the JD clearly states it is required or mandatory.
 - Add a skill to "preferred_skills" ONLY if the JD clearly states it is optional, preferred, or a plus.
 - If the JD does not clearly distinguish, treat the skill as "required".
-- Do NOT duplicate the same skill across both lists.
 
 ====================
 EXPERIENCE RULES
@@ -326,7 +328,6 @@ EXPERIENCE RULES
 - Convert years to months (e.g., 5 years → 60 months).
 - If experience is vague or implied, set "min_experience_months" to null.
 - Do NOT infer experience per skill.
-- Preserve other experience-related statements as human-readable strings in "experience_requirements".
 
 ====================
 EDUCATION EXTRACTION RULES
@@ -383,7 +384,8 @@ Return the result strictly in the following JSON schema:
                         "content": self.data
                     },
                 ],
-                model = self.model
+                model = self.model,
+                temperature=self.model_temperature
             )
             
             json_data = response.choices[0].message.content

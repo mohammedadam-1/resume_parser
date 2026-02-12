@@ -9,9 +9,25 @@ from sentence_transformers import SentenceTransformer, util
 import torch
 from typing import Tuple
 from pydantic import BaseModel, PrivateAttr, Field
+import threading
   
-# Load model once when the server starts  
-SHARED_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+# Global model instance with thread-safe lazy loading
+_model_lock = threading.Lock()
+_model_instance_ = None 
+
+def get_shared_model() -> SentenceTransformer:
+    """lazy loading using threading"""
+    
+    global _model_instance_
+    
+    if _model_instance_ is None:
+        with _model_lock:
+            if _model_instance_ is None:
+                logging.info("Loading SentenceTransformer model...")
+                _model_instance_ = SentenceTransformer("all-MiniLM-L6-v2")
+                logging.info("Model loaded successfully")
+                
+    return _model_instance_        
 
 class Candidate_Score(BaseModel):
     resume_data: ResumeSchema
@@ -25,7 +41,7 @@ class Candidate_Score(BaseModel):
             "keywords": 0.0
         }) 
     def model_post_init(self, _):
-        self._model = SHARED_MODEL
+        self._model = get_shared_model()
         
            
     def skills_score(self) -> dict[str, float]:
@@ -34,11 +50,13 @@ class Candidate_Score(BaseModel):
             logging.info("Initialized skills scoring")
     
             candidate_skills = set(self.resume_data.skills)
-            logging.info("Loaded candidate skills for scoring")
+            logging.info("Loaded candidate_skills for scoring from resume")
             
             required_skills = set(self.jd_data.required_skills)
+            logging.info("Loaded required_skills for scoring from jd")
+        
             preferred_skills = set(self.jd_data.preferred_skills)
-            logging.info("Loaded required skills and preferred skills for scoring")
+            logging.info("Loaded preferred_skills for scoring from jd")
             
             req_score_list = []
             pref_score_list = []
@@ -51,7 +69,7 @@ class Candidate_Score(BaseModel):
                 ratio_req = len(matched_required_skills) / len(required_skills)
         
                 score_req = round(ratio_req * 50.0, 2)
-                logging.info("Calculated the score for matched required_skills")
+                logging.info(f"Calculated the score:{score_req} for matched required_skills")
                 req_score_list.append(score_req)
                 
                 if len(candidate_skills) > 0:
@@ -93,8 +111,9 @@ class Candidate_Score(BaseModel):
                         logging.info(f"{score} points assigned to candidate for semantic similarity in required_skills")
                         
                     
-                    req_score_list = round(float(sum(req_score_list) / 2), 2)    
-                    self.current_points["required_skills"] = req_score_list
+                    final_score = round(float(sum(req_score_list) / 2), 2) 
+                    logging.info(f"Summed and Averaged the required matched skill score & cosine_sim score: final_score:{final_score}")   
+                    self.current_points["required_skills"] = final_score
                 
             else:
                 score_req = 0.0
@@ -109,7 +128,7 @@ class Candidate_Score(BaseModel):
                 logging.info("Matched candidate skills & preferred skills")
                 ratio_pref = len(matched_preferred_skills) / len(preferred_skills)
                 score_pref = ratio_pref * 15.0
-                logging.info("Calculated the score for matched preferred_skills")
+                logging.info(f"Calculated the score for matched preferred_skills: {score_pref}")
                 
                 if len(candidate_skills) > 0:
                     logging.info("Initialized semantic skills matching for preferred_skills using cosine similariy")
@@ -149,8 +168,10 @@ class Candidate_Score(BaseModel):
                         logging.info(f"{score} points assigned to candidate for semantic similarity in preferred_skills")
                         
                     
-                    pref_score_list = round(float(sum(pref_score_list) / 2), 2)    
-                    self.current_points["preferred_skills"] = pref_score_list
+                    pref_final_score = round(float(sum(pref_score_list) / 2), 2) 
+                    logging.info(f"Summed and Averaged the preferred matched skill score & cosine_sim score: final_score:{pref_final_score}")   
+   
+                    self.current_points["preferred_skills"] = pref_final_score
                 
             else:
                 score_pref = 0.0
@@ -165,12 +186,12 @@ class Candidate_Score(BaseModel):
             logging.info("Unable to score candidate's skill section") 
             raise CustomException(e, sys)
 
-    def experience_score(self) -> dict[str, float]:
+    def experience_score(self, points: dict[str, float]) -> dict[str, float]:
         """Calculate the Score for candidate's total experience(months) and assign points accordingly"""
         try: 
             logging.info("Initialized scoring for candidate's experience_score")
-            current_points = self.education_score()
-            logging.info("Loaded current_points from education_score")
+            current_points = points
+        
             required_months = self.jd_data.min_experience_months or 0
             logging.info("Loaded required_months experience from JD")
             half_req = required_months / 2 # Half months required of total required months in JD
@@ -313,14 +334,12 @@ class Candidate_Score(BaseModel):
             logging.info("Unable to compare and score candidate education")
             raise CustomException(e, sys)
         
-    def keywords_score(self) -> dict[str, float]:
+    def keywords_score(self, points: dict[str, float]) -> dict[str, float]:
         """Calculate the score for keywords present in candidate's resume and JD, assign points accordingly"""  
         
         try:
             logging.info("Initialized scoring for candidate's keywords_score section")
-            current_points = self.experience_score()
-            
-            logging.info("Loaded current_points from experience_score")
+            current_points = points
             
             candidate_keywords = self.resume_data.keywords
             logging.info("Loaded candidate_keywords from resume")
@@ -353,29 +372,33 @@ class Candidate_Score(BaseModel):
                 logging.info("found the best matched keywords")
                 # print(f"best_matches_per_keyword: {best_matches_per_keyword}")
                 final_similarity = torch.mean(best_matches_per_keyword).item() 
-                logging.info("Averaged the score by dividing final_similarity by the len of best_matches_per_keyword") 
-                # print(f"final_similarity: {final_similarity * 10}")
-                current_points["keywords"] = round(final_similarity * 10, 2)
+                logging.info("Averaged the score by dividing final_similarity by the len of best_matches_per_keyword")
+                keywords_score = round(final_similarity * 10, 2) 
+                logging.info(f"{keywords_score} points assigned to candidate's keywords")
+    
+                current_points["keywords"] = keywords_score
                 
-                logging.info("Assigned points to candidate's keywors and returned current_points")
             return current_points
         
         except Exception as e:
             logging.info("Unable to compare and score keywords")
             raise CustomException(e, sys)
         
-    def candidate_total_score(self) -> Tuple[dict[str, float], float]:
+    def candidate_total_score(self, points: dict[str, float]) -> Tuple[dict[str, float], float]:
         """Return current points and the sum of points assigned to candidate"""
         
         try:
             logging.info("Initialized to sum the points assigned to candidate")
-            current_points = self.keywords_score()
+            
+            current_points = self.experience_score(points)
+            logging.info("Loaded current_points from experience_score")
+            current_points = self.keywords_score(current_points)
             logging.info("Loaded current_points from keywords_score")
             
             total_score = sum(current_points.values())
             candidate_total_score = round(total_score, 2)
             
-            logging.info("Calculated and retured sum of all points")
+            logging.info(f"Calculated and retured sum of all points: {candidate_total_score}")
             return current_points, candidate_total_score
              
         except Exception as e:

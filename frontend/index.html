@@ -354,15 +354,40 @@
       border-color: #ef4444;
     }
 
-    .debug-info {
+    .success-message {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .success-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+
+    .success-message h3 {
+      color: #10b981;
+      font-size: 28px;
+      margin-bottom: 15px;
+    }
+
+    .success-message p {
+      color: #64748b;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .reference-number {
+      display: inline-block;
       margin-top: 20px;
-      padding: 15px;
-      background: #f1f5f9;
+      padding: 12px 24px;
+      background: #f0f9ff;
+      border: 2px solid #3b82f6;
       border-radius: 8px;
-      font-size: 12px;
       font-family: monospace;
-      max-height: 200px;
-      overflow-y: auto;
+      font-size: 18px;
+      color: #1e293b;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -370,7 +395,7 @@
 
 <div class="container">
   <!-- Progress Bar -->
-  <div class="progress-bar">
+  <div class="progress-bar" id="progressBarContainer">
     <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
     <div class="step active" id="step1">1</div>
     <div class="step" id="step2">2</div>
@@ -397,7 +422,7 @@
         </div>
 
         <div class="job-card" onclick="selectJob(1)">
-          <h3>Data Scientist</h3>
+          <h3>AI Engineer / Data Scientist</h3>
           <p>Work with large datasets to build ML models and derive insights. Experience with Python, TensorFlow, and statistical analysis required.</p>
           <div class="job-meta">
             <span>📍 Remote</span>
@@ -613,7 +638,7 @@ Responsibilities:
 - Optimize application performance`
   },
   {
-    title: "Data Scientist",
+    title: "AI Engineer / Data Scientist",
     description: `About the job
 We are seeking a highly skilled AI Engineer to design and implement intelligent systems that drive automation, insights, and innovation. You will work on machine learning (ML), deep learning and optimization algorithms collaborating with cross-functional teams building scalable AI solutions for real-world applications.
 
@@ -848,6 +873,39 @@ function updateReview() {
   document.getElementById('reviewResume').textContent = formData.resumeFile ? formData.resumeFile.name : 'Not uploaded';
 }
 
+function generateReferenceNumber() {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 10000);
+  return `APP-${timestamp}-${random}`;
+}
+
+function showSuccessMessage() {
+  // Hide progress bar and form
+  document.getElementById('progressBarContainer').style.display = 'none';
+  document.getElementById('applicationForm').style.display = 'none';
+  
+  const referenceNumber = generateReferenceNumber();
+  
+  const resultDiv = document.getElementById('result');
+  resultDiv.innerHTML = `
+    <div class="success-message">
+      <div class="success-icon">✅</div>
+      <h3>Application Submitted Successfully!</h3>
+      <p>Thank you for applying to <strong>${formData.jobPosition}</strong>.</p>
+      <p>We have received your application and our team will review it shortly.</p>
+      <p>You will receive an email confirmation at <strong>${formData.email}</strong> within the next 24 hours.</p>
+      <div class="reference-number">
+        Reference: ${referenceNumber}
+      </div>
+      <p style="margin-top: 20px; color: #94a3b8; font-size: 14px;">
+        Please save this reference number for future correspondence.
+      </p>
+    </div>
+  `;
+  resultDiv.classList.remove('error');
+  resultDiv.classList.add('show');
+}
+
 async function submitForm() {
   const resultDiv = document.getElementById('result');
   const submitBtn = document.querySelector('.btn-submit');
@@ -866,9 +924,7 @@ async function submitForm() {
   formDataToSend.append('jd_text', formData.jobDescription);
   
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Analyzing...';
-  resultDiv.innerHTML = '⏳ Analyzing your resume and matching with job requirements...';
-  resultDiv.classList.add('show');
+  submitBtn.textContent = 'Submitting...';
   
   try {
     const response = await fetch('http://127.0.0.1:8000/score/resume', {
@@ -882,75 +938,12 @@ async function submitForm() {
     
     const data = await response.json();
     
-    // Log the response for debugging
+    // Log for debugging (optional - can be removed in production)
     console.log('Backend Response:', data);
     
-    // HARD FAIL CHECK - Check multiple possible field names
-    const isHardFail = data.hard_fail === true || data.hard_fail === 'true';
-    
-    if (isHardFail) {
-      resultDiv.innerHTML = `
-        <h3 style="color: #dc2626; margin-bottom: 15px;">❌ Application Not Qualified</h3>
-        <p><strong>Failed Gate:</strong> ${data.failed_gate || 'N/A'}</p>
-        <p><strong>Your Score:</strong> ${data.details?.candidate_score || 'N/A'}</p>
-        <p><strong>Minimum Required:</strong> ${data.details?.minimum_required || 'N/A'}</p>
-        <p style="margin-top: 15px; color: #64748b;">We appreciate your interest, but your profile does not meet the minimum requirements for this position at this time.</p>
-        <div class="debug-info">
-          <strong>Debug Info:</strong><br>
-          ${JSON.stringify(data, null, 2)}
-        </div>
-      `;
-      resultDiv.classList.add('error');
-      return;
-    }
-    
-    // SUCCESS - Display classification results
-    // Check if we have the necessary fields
-    if (!data.classification && !data.final_score) {
-      throw new Error('Invalid response format from backend');
-    }
-    
-    resultDiv.innerHTML = `
-      <h3 style="color: #10b981; margin-bottom: 15px;">✅ ${data.classification || 'Classification Result'}</h3>
-      <p style="font-size: 18px; margin-bottom: 20px;"><strong>Final Score:</strong> ${data.final_score || 'N/A'}</p>
-      
-      <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
-        <tr style="background: #f1f5f9;">
-          <th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Category</th>
-          <th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Score</th>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #e2e8f0;">Required Skills</td>
-          <td style="padding: 10px; border: 1px solid #e2e8f0;">${data.details?.required_skills || 'N/A'}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #e2e8f0;">Preferred Skills</td>
-          <td style="padding: 10px; border: 1px solid #e2e8f0;">${data.details?.preferred_skills || 'N/A'}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #e2e8f0;">Experience</td>
-          <td style="padding: 10px; border: 1px solid #e2e8f0;">${data.details?.experience || 'N/A'}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #e2e8f0;">Education</td>
-          <td style="padding: 10px; border: 1px solid #e2e8f0;">${data.details?.education || 'N/A'}</td>
-        </tr>
-        <tr>
-          <td style="padding: 10px; border: 1px solid #e2e8f0;">Keywords</td>
-          <td style="padding: 10px; border: 1px solid #e2e8f0;">${data.details?.keywords || 'N/A'}</td>
-        </tr>
-      </table>
-      
-      <p style="margin-top: 20px; padding: 15px; background: #eff6ff; border-radius: 8px; color: #1e40af;">
-        Thank you for applying! Our team will review your application and get back to you within 3-5 business days.
-      </p>
-      
-      <div class="debug-info">
-        <strong>Debug Info:</strong><br>
-        ${JSON.stringify(data, null, 2)}
-      </div>
-    `;
-    resultDiv.classList.remove('error');
+    // Show success message regardless of score
+    // Backend will handle the actual filtering/classification
+    showSuccessMessage();
     
   } catch (err) {
     console.error('Submission error:', err);
@@ -959,7 +952,7 @@ async function submitForm() {
       <p>${err.message}</p>
       <p style="margin-top: 10px; color: #64748b; font-size: 14px;">Please make sure the backend server is running on http://127.0.0.1:8000</p>
     `;
-    resultDiv.classList.add('error');
+    resultDiv.classList.add('show', 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit';

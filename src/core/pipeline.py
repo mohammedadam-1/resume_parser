@@ -21,9 +21,10 @@ from src.input_pipeline.jd_input import Jd_Parsing
 from src.semantic_scoring.candidate_score import Candidate_Score
 from src.semantic_scoring.candidate_fail_fast import Fail_Fast
 from src.classify_candidates.classify import Classify
+import asyncio
 
 
-def run_pipeline(resume_bytes: bytes, jd_text: str):
+async def run_pipeline(resume_bytes: bytes, jd_text: str):
     temp_dir = None
 
     try:
@@ -37,21 +38,23 @@ def run_pipeline(resume_bytes: bytes, jd_text: str):
         # 2 Resume extraction
         extract_obj = Extract(file_path=resume_path)
         resume_text = extract_obj.extract_text()
-
+        
+        jd_obj = Jd_Parsing(data=jd_text)
+        jd_raw = jd_obj.jd_data()  
         # 3 Resume LLM parsing
         llm_resume = ParseResumeData(data=resume_text)
-        resume_llm_output = llm_resume.llm_resume_parser()
+        llm_jd = ParseJdData(data=jd_raw)
+        
+        resume_llm_output, jd_llm_output = await asyncio.gather(
+            asyncio.to_thread(llm_resume.llm_resume_parser),
+            asyncio.to_thread(llm_jd.llm_jd_parser)
+        )
 
         validated_output = ValidateResume(data=resume_llm_output).data
         normalized_resume = NormalizeResume(data=validated_output).remove_duplicates()
 
         # 4 JD parsing
-        jd_obj = Jd_Parsing(data=jd_text)
-        jd_raw = jd_obj.jd_data()
-
-        llm_jd = ParseJdData(data=jd_raw)
-        jd_llm_output = llm_jd.llm_jd_parser()
-
+        
         validatedJd_output = ValidateJd(data=jd_llm_output).data
         normalized_jd = NormalizeJd(data=validatedJd_output).removejd_duplicates()
 
@@ -64,7 +67,7 @@ def run_pipeline(resume_bytes: bytes, jd_text: str):
         if rejection is not None:
             return rejection
                                                             
-        current_points, total_points = scorer.candidate_total_score()
+        current_points, total_points = scorer.candidate_total_score(points=current_points)
 
         # 6 Classification
         classifier = Classify(current_points=current_points, total_points=total_points)

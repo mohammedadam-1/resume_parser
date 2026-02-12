@@ -1,4 +1,4 @@
-from typing import List, Dict, Literal, Optional 
+from typing import Dict, Literal 
 from pydantic import BaseModel, Field 
 
 class FilePath(BaseModel):

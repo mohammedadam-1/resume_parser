@@ -1,13 +1,14 @@
 import sys 
 from src.exception import CustomException 
 from src.logger import logging 
-from models.schemas import ClassificationResult, CurrentPoints, ScoreBreakdown
-from pydantic import BaseModel, Field
+from models.schemas import CurrentPoints
+from pydantic import BaseModel
+import json
 
 class Fail_Fast(BaseModel):
     current_points: CurrentPoints
     minimum_education_points: float = 3.0
-    minimum_required_skills_points: float = 10.0
+    minimum_required_skills_points: float = 20.0
         
     def hard_fail_candidate(self):
         """
@@ -23,14 +24,36 @@ class Fail_Fast(BaseModel):
 
             if candidate_required_skills_score < self.minimum_required_skills_points:
                 logging.info("Candidate failed at required_skills gate")
-                return self.rejected_candidate_report(
+                report = self.rejected_candidate_report(
                     failed_gate="required_skills",
                     candidate_score=candidate_required_skills_score,
                     minimum_points=self.minimum_required_skills_points
                 )
+                str_report = json.dumps(report)
+                
+                with open("Classified_Candidates/Failed/hard_fail.txt", "a") as f:
+                    f.write(str_report + "\n")
+                logging.info("logged failed candidate details in 'hard_fail.txt'")
+                    
+                return self.rejected_candidate_report(
+                    failed_gate="required_skills",
+                    candidate_score=candidate_required_skills_score,
+                    minimum_points=self.minimum_required_skills_points
+                )    
 
             if candidate_education_score < self.minimum_education_points:
                 logging.info("Candidate failed at education gate")
+                
+                report = self.rejected_candidate_report(
+                    failed_gate="education",
+                    candidate_score=candidate_education_score,
+                    minimum_points=self.minimum_education_points
+                )
+                str_report = json.dumps(report)
+                
+                with open("Classified_Candidates/Failed/hard_fail.txt", "a") as f:
+                    f.write(str_report + "\n")
+                
                 return self.rejected_candidate_report(
                     failed_gate="education",
                     candidate_score=candidate_education_score,
@@ -41,7 +64,7 @@ class Fail_Fast(BaseModel):
             return None
 
         except Exception as e:
-            logging.info("Issue in hard_fail_candidate func")
+            logging.info("Issue in hard_fail_candidate method")
             raise CustomException(e, sys)
   
         

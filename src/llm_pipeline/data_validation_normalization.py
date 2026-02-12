@@ -6,20 +6,20 @@ from src.utils import _recursive_strip, _recursive_lower
 from pydantic import BaseModel, Field, field_validator
 from typing import Any
 
-class Projects(BaseModel):
-    title: str | None = None
-    technologies: list[str] = Field(default_factory=list)
-    description: list[str] = Field(default_factory=list)
+# class Projects(BaseModel):
+#     title: str | None = None
+#     technologies: list[str] = Field(default_factory=list)
+#     description: list[str] = Field(default_factory=list)
     
 class Education(BaseModel):
     degree_level: str | None = None
     degree_name: str | None = None
     field: str | None = None
     
-class Experience(BaseModel):
-    company: str | None = None
-    role: str | None = None
-    responsibilities: list[str] = Field(default_factory=list)
+# class Experience(BaseModel):
+#     company: str | None = None
+#     role: str | None = None
+#     responsibilities: list[str] = Field(default_factory=list)
 
 
 class ResumeSchema(BaseModel):
@@ -30,13 +30,13 @@ class ResumeSchema(BaseModel):
     github_url: str | None = None
     skills: list[str] = Field(default_factory=list)
     education: list[Education] = Field(default_factory=list)
-    projects: list[Projects] = Field(default_factory=list)
+    # projects: list[Projects] = Field(default_factory=list)
     total_experience_months: int | None = None
-    experience: list[Experience] = Field(default_factory=list)
-    certifications: list[str] = Field(default_factory=list) 
+    # experience: list[Experience] = Field(default_factory=list)
+    # certifications: list[str] = Field(default_factory=list) 
     keywords: list[str] = Field(default_factory=list)
 
-    @field_validator('emails', 'phone_numbers', 'skills', 'education', 'projects', 'experience', 'certifications', 'keywords', mode='before')
+    @field_validator('emails', 'phone_numbers', 'skills', 'education', 'keywords', mode='before')
     @classmethod
     def ensure_list(cls, v: Any) -> Any:
         if v is None:
@@ -45,7 +45,6 @@ class ResumeSchema(BaseModel):
 
 class ValidateResume(BaseModel):
     data: ResumeSchema
-  
   
 class RequiredEducation(BaseModel):
     degree_level: str | None = None
@@ -57,7 +56,7 @@ class JdSchema(BaseModel):
     required_skills: list[str] = Field(default_factory=list)
     preferred_skills: list[str] = Field(default_factory=list)
     min_experience_months: int | None = None
-    experience_requirements: list[str] = Field(default_factory=list)
+    # experience_requirements: list[str] = Field(default_factory=list)
     required_education: list[RequiredEducation] = Field(default_factory=list)
     keywords: list[str] = Field(default_factory=list)
     
@@ -74,7 +73,6 @@ class ValidateJd(BaseModel):
   
 class NormalizeResume(BaseModel):
     data: ResumeSchema
-    
     
     def str_norm(self) -> ResumeSchema:
         """Strip whitespaces and normalize the strings data"""
