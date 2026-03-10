@@ -8,6 +8,8 @@ load_dotenv()
 from src.utils import parse_experience_from_resume
 from src.utils import safe_json_loads
 from pydantic import BaseModel, PrivateAttr, Field, ConfigDict
+from functools import lru_cache
+import copy
 
 
 class ParseResumeData(BaseModel):
@@ -32,31 +34,56 @@ class ParseResumeData(BaseModel):
         
         try:
             
-            output_schema = {
-                "name": "",
-                "emails": [], 
-                "phone_numbers": [],
-                "linkedin_url": "",
-                "github_url": "",
-                "skills": [],
-                # "projects": [{"title": "",
-                #               "technologies_used": [],
-                #               "description": []},],
-                # "experience": [
-                #     {
-                #         "company": "",
-                #         "role": "",
-                #         "responsibilities": [],
-                #     },
-                # ],
-                "total_experience_months": None,
-                # "certifications": [],
-                "education": [{"degree_level": "",
-                               "degree_name": "",
-                               "field": ""},],
-                "keywords": []
-                
-            }
+            resume_schema = {
+                "type":"object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "emails": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "phone_numbers": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "linkedin_url": {"type": ["string", "null"]},
+                    "github_url": {"type": ["string", "null"]},
+                    "skills": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "total_experience_months" : {"type": ["integer", "null"]},
+                    "education": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "degree_level": {"type": "string"},
+                                "degree_name": {"type": "string"},
+                                "field": {"type": "string"}
+                            },
+                            "required": ["degree_level", "degree_name", "field"],
+                            "additionalProperties": False
+                        }
+                    },
+                     "keywords": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                },
+                "required": [
+                    "name", 
+                    "emails", 
+                    "phone_numbers", 
+                    "linkedin_url",
+                    "github_url",
+                    "skills", 
+                    "total_experience_months",
+                    "education", 
+                    "keywords"
+                ],
+                "additionalProperties": False
+                }
             
             system_prompt = f"""
 
@@ -69,23 +96,21 @@ a STRICTLY VALID JSON object that EXACTLY matches the given schema.
 GLOBAL RULES (MANDATORY)
 ====================
 
-1. You MUST return ONLY a valid JSON object.
+1. You MUST return ONLY a valid JSON object matching the schema.
 2. Do NOT include explanations, comments, markdown, or extra text.
 3. Do NOT change schema keys.
 4. Do NOT add new fields.
 5. Do NOT remove fields.
 6. If a value is not present in the resume:
-   - use null for scalar fields
-   - use an empty array for list fields
+   - use null for nullable fields
+   - use an empty array [] for array fields
+   - use empty string "" for required string fields
 7. Do NOT invent, assume, or infer information that is not explicitly present.
 8. Preserve factual accuracy at all times.
-9. The output must strictly conform to the provided schema.
 
 ====================
 SKILLS EXTRACTION & EXPANSION RULES
 ====================
-
-The "skills" field must contain a normalized list of technical skills.
 
 1. Include ONLY skills explicitly mentioned in the resume.
 2. You MAY expand a skill ONLY into:
@@ -94,69 +119,36 @@ The "skills" field must contain a normalized list of technical skills.
    - atomic components of the same skill
 3. Do NOT add related or unmentioned technologies.
 4. Do NOT infer skills from job titles, companies, or responsibilities.
-5. Do NOT infer proficiency or seniority.
-6. Skill tokens must be:
-   - lowercase
-   - concise 
-   - technically equivalent
-7. Limit expansion to a maximum of 6 tokens per original skill.
-8. Cross check the extracted skills 
+5. Skill tokens must be lowercase and concise.
+6. Limit expansion to a maximum of 6 tokens per original skill.
 
 ====================
 EXPERIENCE RULES
 ====================
 
-- Extract experience entries as written.
-- Do NOT infer years, durations, or seniority.
-- You MUST NOT extract or reason about experience dates.
-- For ALL experience entries, set all date-related fields to null.
-- Date extraction and experience calculation are handled externally.
+- ALWAYS set "total_experience_months" to null.
+- Experience calculation is handled externally.
 
 ====================
-EDUCATION EXTRACTION RULES (IMPORTANT)
+EDUCATION EXTRACTION RULES
 ====================
 
 1. Extract ONLY the highest completed or currently pursuing qualification.
-2. Ignore lower or earlier qualifications once the highest is identified.
-3. Do NOT infer or guess degree level, field, or institution.
-4. Preserve wording exactly as written where applicable.
-5. Normalize degree level into ONE of:
-   - phd
-   - masters
-   - bachelors
-   - diploma
-   - high_school
-
-6. Extract ONLY the primary field / specialization (if explicitly stated).
-7. Do NOT infer related or equivalent fields.
-8. Institution name must be extracted only if explicitly mentioned.
-9. Graduation year must be extracted only if explicitly mentioned; otherwise null.
-10. Do NOT rank or judge institutions.
-11. Do NOT extract multiple education entries.
+2. Normalize degree_level into ONE of:
+   - "phd"
+   - "masters"
+   - "bachelors"
+   - "diploma"
+   - "high_school"
+3. If no education is found, return an empty array [].
 
 ====================
 KEYWORDS RULES
 ====================
 
-The "keywords" field is for SOFT relevance signals ONLY.
-
 1. Extract short, meaningful keywords explicitly mentioned in the resume.
-2. Keywords must be:
-   - lowercase
-   - concise (1–3 words)
-3. Do NOT include any keyword already present in:
-   - required_skills
-   - preferred_skills
-4. Do NOT infer new keywords.
-5. Keywords must NOT affect hard constraints.
-
-====================
-OUTPUT SCHEMA
-====================
-
-Return the result strictly in the following JSON schema:
-
-{output_schema}
+2. Keywords must be lowercase and concise (1–3 words).
+3. Do NOT include keywords already in skills.
 """
 
             response = self._client.chat.completions.create(
@@ -171,7 +163,15 @@ Return the result strictly in the following JSON schema:
                     },
                 ],
                 model=self.model,
-                temperature=self.model_temperature
+                temperature=self.model_temperature,
+                response_format={
+                    "type":"json_schema",
+                    "json_schema": {
+                        "name": "resume_schema",
+                        "strict":True,
+                        "schema": resume_schema
+                    }
+                }
             )
             
             logging.info(f"received response from {self.model} LLM")
@@ -199,6 +199,160 @@ Return the result strictly in the following JSON schema:
         except Exception as e:
             logging.info("Failed to load candidate experience in 'total_experience_months'")
             raise CustomException(e, sys)
+
+@lru_cache(maxsize=50)
+def _cached_jd_parser(data: str, model: str , model_temperature: float) -> dict:
+    """
+    Cached JD parsing function.
+    
+    Args:
+        jd_text: The job description text (must be hashable)
+        model: The model name
+        model_temperature: The model temperature
+        client: Groq
+        
+    Returns:
+        Parsed JD as dictionary
+    """
+    
+    try:
+        logging.info("Cache miss - parsing JD with LLM")
+        
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY environment variable is not set")
+        
+        _client = Groq(api_key=api_key)
+        
+        jd_schema = {
+            "type": "object",
+            "properties": {
+                "job_title": {"type": "string"},
+                "required_skills": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "preferred_skills": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "min_experience_months": {"type": ["integer", "null"]},
+                "required_education": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "degree_level": {"type": "string"},
+                            "degree_name": {"type": "string"},
+                            "field": {"type": "string"}
+                        },
+                        "required": ["degree_level", "degree_name", "field"],
+                        "additionalProperties": False
+                    }
+                },
+                "keywords": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            },
+            "required": [
+                "job_title",
+                "required_skills",
+                "preferred_skills",
+                "min_experience_months",
+                "required_education",
+                "keywords"
+            ],
+            "additionalProperties": False
+        }
+            
+        jd_system_prompt = """
+You are a Job Description (JD) parsing and normalization engine.
+
+Your task is to read the provided Job Description text and return a
+STRICTLY VALID JSON object that EXACTLY matches the given schema.
+
+====================
+GLOBAL RULES (MANDATORY)
+====================
+
+1. You MUST return ONLY a valid JSON object matching the schema.
+2. Do NOT include explanations, comments, markdown, or extra text.
+3. If a value is not present:
+   - use null for nullable fields
+   - use empty array [] for array fields
+   - use empty string "" for required string fields
+4. Do NOT invent or infer requirements.
+
+====================
+SKILL EXTRACTION RULES
+====================
+
+1. Extract ONLY skills explicitly mentioned in the JD.
+2. Each skill must be lowercase and concise.
+3. Do NOT include brackets, parentheses, or explanations.
+4. If a skill has sub-components (e.g., "AWS (Lambda, S3)"):
+   - Extract as separate skills: ["aws lambda", "aws s3"]
+
+====================
+REQUIRED vs PREFERRED SKILLS
+====================
+
+- "required_skills": Skills marked as required or mandatory
+- "preferred_skills": Skills marked as optional, preferred, or a plus
+- If unclear, treat as required
+
+====================
+EXPERIENCE RULES
+====================
+
+- Extract "min_experience_months" ONLY if explicitly stated
+- Convert years to months (e.g., 5 years → 60)
+- If vague or not stated, use null
+
+====================
+EDUCATION RULES
+====================
+
+1. Extract minimum required qualification only
+2. degree_level must be one of: "phd", "masters", "bachelors", "diploma", "high_school"
+3. If no education requirement, return empty array []
+"""
+        response = _client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": jd_system_prompt
+                    },
+                    {
+                        "role": "user",
+                        "content": data
+                    },
+                ],
+                model = model,
+                temperature=model_temperature,
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name":"jd_schema",
+                        "strict": True,
+                        "schema": jd_schema
+                    }
+                }
+            )
+            
+        json_data = response.choices[0].message.content
+        logging.info("LLM parsed and returned JD as json object")
+            
+        data = safe_json_loads(json_data)  
+        logging.info("Loaded json obj into python dict")    
+        logging.info("Cached JD parsing result")                          
+        
+        return copy.deepcopy(data) # clear concept here - shallow and deep copy
+        
+    except Exception as e:
+        logging.info("Error in cached_jd_parser method")
+        raise CustomException(e, sys)
     
 class ParseJdData(BaseModel):
     data: str = Field(min_length=1)
@@ -207,194 +361,15 @@ class ParseJdData(BaseModel):
     _client: Groq = PrivateAttr()
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
-    def model_post_init(self, _):
-        api_key = os.getenv("GROQ_API_KEY")
-        self._client = Groq(api_key=api_key)
-                
+          
     def llm_jd_parser(self) -> dict:
-        """Parses the JDs and returns a json object"""
+        """
+        Parses the JDs and returns a json object.
+        Uses cached function for identical JD texts.
+        """
         try:
-            
-            logging.info("Initialized parsing of JD data")
-            
-            
-            
-            jd_schema = {
-                "job_title" : "",
-                "required_skills": [],
-                "preferred_skills": [],
-                "min_experience_months": int,
-                # "experience_requirements": [],
-                "required_education": 
-                    [{"degree_level": "",
-                      "degree_name": "",
-                      "field": ""},],
-                "keywords": []
-            }
-            
-            jd_system_prompt = f"""
-
-You are a Job Description (JD) parsing and normalization engine.
-
-Your task is to read the provided Job Description text and return a
-STRICTLY VALID JSON object that EXACTLY matches the given output schema.
-
-====================
-GLOBAL RULES (MANDATORY)
-====================
-
-1. You MUST return ONLY a valid JSON object.
-2. Do NOT include explanations, comments, markdown, or extra text.
-3. Do NOT change schema keys.
-4. Do NOT add new fields.
-5. Do NOT remove fields.
-6. If a value is not explicitly present in the JD:
-   - use null for scalar fields
-   - use an empty array for list fields
-7. Do NOT invent, assume, or infer requirements.
-8. Preserve factual accuracy at all times.
-9. The output must strictly conform to the provided schema.
-
-====================
-SKILL EXTRACTION RULES (VERY IMPORTANT)
-====================
-
-The fields "required_skills" and "preferred_skills" must contain ONLY
-clean, atomic, standalone technical skill names.
-
-When extracting skills:
-
-1. Extract ONLY skills that are explicitly mentioned in the JD.
-2. Do NOT infer skills based on:
-   - job title
-   - role expectations
-   - industry norms
-3. Each skill MUST be:
-   - lowercase
-   - concise 
-   - a standalone technical term
-4. Do NOT include:
-   - brackets or parentheses
-   - explanations
-   - examples
-   - qualifiers
-   - commas inside skill names
-5. Do NOT include phrases such as:
-   - "experience with"
-   - "knowledge of"
-   - "hands-on"
-   - "familiarity with"
-6. Do NOT merge multiple skills into one string.
-
-❌ INVALID:
-- "aws (sagemaker, lambda)"
-- "mlops (ci/cd, monitoring)"
-- "python experience"
-- "machine learning & ai"
-
-✅ VALID:
-- "aws sagemaker"
-- "aws lambda"
-- "mlops"
-- "ci/cd"
-- "python"
-- "machine learning"
-- "ai"
-
-7. If a skill appears with brackets or examples in the JD:
-   - extract ONLY the core skill name
-   - extract sub-skills as SEPARATE skill entries if explicitly listed
-
-Example:
-JD text: "Experience with AWS (SageMaker, Lambda, EKS)"
-Extract:
-- "aws sagemaker"
-- "aws lambda"
-- "aws eks"
-
-====================
-REQUIRED vs PREFERRED SKILLS
-====================
-
-- Add a skill to "required_skills" ONLY if the JD clearly states it is required or mandatory.
-- Add a skill to "preferred_skills" ONLY if the JD clearly states it is optional, preferred, or a plus.
-- If the JD does not clearly distinguish, treat the skill as "required".
-
-====================
-EXPERIENCE RULES
-====================
-
-- Extract "min_experience_months" ONLY if an explicit numeric requirement is stated.
-- Convert years to months (e.g., 5 years → 60 months).
-- If experience is vague or implied, set "min_experience_months" to null.
-- Do NOT infer experience per skill.
-
-====================
-EDUCATION EXTRACTION RULES
-====================
-
-1. Extract ONLY the minimum required qualification mentioned in the job description.
-2. Extract degree_level strictly as one of:
-   - phd
-   - masters
-   - bachelors
-   - diploma
-   - high_school
-3. Extract ONLY the primary field / specialization (if explicitly stated).
-4. Do NOT infer related or equivalent fields.
-5. Institution name must be extracted only if explicitly mentioned.
-6. Graduation year must be extracted only if explicitly mentioned; otherwise null.
-7. Do NOT rank or judge institutions.
-8. Do NOT extract multiple education entries.
-9. If the job description has NO education requirement, set the entire education object to null.
-
-
-====================
-KEYWORDS RULES
-====================
-
-The "keywords" field is for SOFT relevance signals ONLY.
-
-1. Extract short, meaningful keywords explicitly mentioned in the JD.
-2. Keywords must be:
-   - lowercase
-   - concise (1–3 words)
-3. Do NOT include any keyword already present in:
-   - required_skills
-   - preferred_skills
-4. Do NOT infer new keywords.
-5. Keywords must NOT affect hard constraints.
-
-====================
-OUTPUT SCHEMA
-====================
-
-Return the result strictly in the following JSON schema:
-
-{jd_schema}
-"""
-            response = self._client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "system",
-                        "content": jd_system_prompt
-                    },
-                    {
-                        "role": "user",
-                        "content": self.data
-                    },
-                ],
-                model = self.model,
-                temperature=self.model_temperature
-            )
-            
-            json_data = response.choices[0].message.content
-            logging.info("Llm parsed and returned JD as json object")
-            
-            data = safe_json_loads(json_data)  
-            logging.info("Loaded json obj into python dict")                              
-            
-            return data
+            logging.info("Initialized JD parsing...")
+            return _cached_jd_parser(data=self.data, model=self.model, model_temperature=self.model_temperature)
             
         except Exception as e:
             logging.info("llm Failed to parse JD")

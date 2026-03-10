@@ -13,5 +13,3 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s- %(message)s .log'
     
 )
-
-logging.info("logging has been started")

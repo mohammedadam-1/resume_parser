@@ -914,7 +914,7 @@ async function submitForm() {
   resultDiv.innerHTML = '';
   
   if (!formData.resumeFile || !formData.jobDescription) {
-    resultDiv.innerHTML = '❌ Missing required information';
+    resultDiv.innerHTML = ' Missing required information';
     resultDiv.classList.add('show', 'error');
     return;
   }
@@ -941,8 +941,6 @@ async function submitForm() {
     // Log for debugging (optional - can be removed in production)
     console.log('Backend Response:', data);
     
-    // Show success message regardless of score
-    // Backend will handle the actual filtering/classification
     showSuccessMessage();
     
   } catch (err) {

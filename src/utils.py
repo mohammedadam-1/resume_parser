@@ -10,6 +10,7 @@ from dateutil.relativedelta import relativedelta
 import pdfplumber 
 from fastapi import HTTPException, status
 import json  
+import io
 
 
 
@@ -62,20 +63,19 @@ def check_file_len(resume_text:str) -> None:
                 detail="Resume content is too short. Please upload a valid resume with at least 100 characters of text."
             )
     
-def route_filetype(file_path: FilePath) -> str:
-    """Route to specific file extractors based on file type and extract content"""   
+def route_filetype(stream: bytes) -> str:
+    # """Route to specific file extractors based on file type and extract content"""   
     
     try:
         
-        filepath = Path(file_path)
+        file_obj = io.BytesIO(stream)
         full_text = []
 
-        if filepath.suffix.lower() == '.pdf':
-            with pdfplumber.open(filepath) as pdf:
-                for page in pdf.pages: # Use .pages for clarity
-                    page_text = page.extract_text() # .extract_text() is the standard method
-                    if page_text:
-                        full_text.append(page_text)
+        with pdfplumber.open(file_obj) as pdf:
+            for page in pdf.pages: # Use .pages for clarity
+                page_text = page.extract_text() # .extract_text() is the standard method
+                if page_text:
+                    full_text.append(page_text)
         
         # Join pages and clean up extra newlines/spaces
         cleaned_text = "\n".join(full_text).strip()

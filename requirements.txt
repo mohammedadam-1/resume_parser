@@ -5,3 +5,10 @@ docx2python
 groq
 dotenv
 spacy
+supabase
+fastapi
+boto3
+resend
+celery
+httpx
+slowapi

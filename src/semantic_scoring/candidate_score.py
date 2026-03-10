@@ -51,6 +51,8 @@ class Candidate_Score(BaseModel):
     
             candidate_skills = set(self.resume_data.skills)
             logging.info("Loaded candidate_skills for scoring from resume")
+            embed_candidate_skills = ", ".join(list(candidate_skills))
+            candidate_skills_embedding = self._model.encode(embed_candidate_skills, convert_to_tensor=True)
             
             required_skills = set(self.jd_data.required_skills)
             logging.info("Loaded required_skills for scoring from jd")
@@ -74,8 +76,7 @@ class Candidate_Score(BaseModel):
                 
                 if len(candidate_skills) > 0:
                     logging.info("Initialized semantic skills matching for required_skills using cosine similariy")
-                    embed_candidate_skills = ", ".join(list(candidate_skills))
-                    candidate_skills_embedding = self._model.encode(embed_candidate_skills, convert_to_tensor=True)
+                   
                     embed_required_skills = ", ".join(list(required_skills))
                     required_skills_embedding = self._model.encode(embed_required_skills, convert_to_tensor=True) 
                     cos_score_req = util.cos_sim(candidate_skills_embedding, required_skills_embedding)
@@ -117,7 +118,7 @@ class Candidate_Score(BaseModel):
                 
             else:
                 score_req = 0.0
-                logging.info("Assigned score = 0.0 as len of required_skills is 0")
+                logging.info("Assigned score: 0.0 as len of required_skills is 0")
                 
                 self.current_points["required_skills"] = score_req
                
@@ -127,7 +128,7 @@ class Candidate_Score(BaseModel):
                 matched_preferred_skills = candidate_skills & preferred_skills                  
                 logging.info("Matched candidate skills & preferred skills")
                 ratio_pref = len(matched_preferred_skills) / len(preferred_skills)
-                score_pref = ratio_pref * 15.0
+                score_pref = round(ratio_pref * 15.0, 2)
                 logging.info(f"Calculated the score for matched preferred_skills: {score_pref}")
                 
                 if len(candidate_skills) > 0:
@@ -176,7 +177,7 @@ class Candidate_Score(BaseModel):
             else:
                 score_pref = 0.0
                 self.current_points["preferred_skills"] = score_pref
-                logging.info("Assigned score = 0.0 as len of preferred_skills is 0")
+                logging.info("Assigned score: 0.0 as len of preferred_skills is 0")
             
             
             logging.info("Scored and returned candidate's required_skills & preferred_skills") 

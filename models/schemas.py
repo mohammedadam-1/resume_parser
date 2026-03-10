@@ -24,7 +24,7 @@ class ClassificationResult(BaseModel):
         "Strong Fit",
         "Good Fit",
         "Potential Fit",
-        "Not a Fit"
+        "Not Fit"
     ]
     details: ScoreBreakdown
     

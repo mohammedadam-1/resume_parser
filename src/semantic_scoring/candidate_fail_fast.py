@@ -8,7 +8,7 @@ import json
 class Fail_Fast(BaseModel):
     current_points: CurrentPoints
     minimum_education_points: float = 3.0
-    minimum_required_skills_points: float = 20.0
+    minimum_required_skills_points: float = 15.0
         
     def hard_fail_candidate(self):
         """
@@ -23,7 +23,7 @@ class Fail_Fast(BaseModel):
             logging.info("Loaded current_points of candidate's required_skills and education")
 
             if candidate_required_skills_score < self.minimum_required_skills_points:
-                logging.info("Candidate failed at required_skills gate")
+                logging.info(f"Candidate failed at required_skills gate: {candidate_required_skills_score}")
                 report = self.rejected_candidate_report(
                     failed_gate="required_skills",
                     candidate_score=candidate_required_skills_score,
@@ -42,7 +42,7 @@ class Fail_Fast(BaseModel):
                 )    
 
             if candidate_education_score < self.minimum_education_points:
-                logging.info("Candidate failed at education gate")
+                logging.info(f"Candidate failed at education gate: {candidate_education_score}")
                 
                 report = self.rejected_candidate_report(
                     failed_gate="education",
@@ -74,7 +74,7 @@ class Fail_Fast(BaseModel):
         try:
             logging.info("Return candidate report")
             return {
-                "status": "rejected",
+                "classification": f"rejected for {failed_gate}",
                 "hard_fail": True,
                 "failed_gate": failed_gate,
                 "details": {

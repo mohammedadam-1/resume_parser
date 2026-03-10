@@ -29,7 +29,7 @@ class Classify(BaseModel):
         "Strong Fit",
         "Good Fit",
         "Potential Fit",
-        "Not a Fit"
+        "Not Fit"
     ]:
         """Compare score and classify candidates"""   
         
@@ -39,17 +39,17 @@ class Classify(BaseModel):
                 self.candidate_classification = "Strong Fit"
                 logging.info("Classified candidate as 'Strong Fit'")
                 
-            elif 65.0 <= self.total_points <= 79.0:
+            elif self.total_points >= 65.0:
                 self.candidate_classification = "Good Fit"
                 logging.info("Classified candidate as 'Good Fit'")
                 
-            elif 50.0 <= self.total_points <=64.0:
+            elif self.total_points >= 50.0:
                 self.candidate_classification = "Potential Fit"
                 logging.info("Classified candidate as 'Potential Fit'")
                 
             else:
-                self.candidate_classification = "Not a Fit"    
-                logging.info("Classified candidate as 'Not a Fit'")
+                self.candidate_classification = "Not Fit"    
+                logging.info("Classified candidate as 'Not Fit'")
              
             logging.info("Returned classified category and total points")    
             return self.candidate_classification   
@@ -70,7 +70,7 @@ class Classify(BaseModel):
                 
                 with open("Classified_Candidates/Passed/strongFit_candidates.txt", "a") as f:
                     f.write(candidate_details + "\n")
-                logging.info("logged passed candidate details in 'strongFit_candidates.txt'")
+                logging.info("logged passed candidate details in 'StrongFit_candidates.txt'")
                 
                 return self.candidate_report_as_dict(self.total_points, classified_candidate)
                  
@@ -95,14 +95,14 @@ class Classify(BaseModel):
                 return self.candidate_report_as_dict(self.total_points, classified_candidate)
                 
             else:
-                classified_candidate = "Not a Fit"  
+                classified_candidate = "Not Fit"  
                 candidate_details: str = self.candidate_report(self.total_points, classified_candidate).model_dump_json()
 
                 logging.info("loaded json obj into 'str' in Classify pipeline")
                 
-                with open("Classified_Candidates/Failed/NotaFit_candidates.txt", "a") as f:
+                with open("Classified_Candidates/Failed/NotFit_candidates.txt", "a") as f:
                     f.write(candidate_details + "\n")
-                logging.info("logged passed candidate details in 'NotaFit_candidates.txt'")       
+                logging.info("logged passed candidate details in 'NotFit_candidates.txt'")       
                 
                 return self.candidate_report_as_dict(self.total_points, classified_candidate)
 
