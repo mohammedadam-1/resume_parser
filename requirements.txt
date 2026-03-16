@@ -12,3 +12,5 @@ resend
 celery
 httpx
 slowapi
+pwdlib
+pyjwt
