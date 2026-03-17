@@ -1,4 +1,5 @@
 import sys 
+import os
 from src.exception import CustomException
 from src.logger import logging
 from typing import Literal
@@ -68,6 +69,8 @@ class Classify(BaseModel):
                 candidate_details: str = self.candidate_report(self.total_points, classified_candidate).model_dump_json()
                 logging.info("loaded json obj into 'str' in Classify pipeline")
                 
+                os.makedirs("Classified_Candidates/Passed", exist_ok=True)
+                
                 with open("Classified_Candidates/Passed/strongFit_candidates.txt", "a") as f:
                     f.write(candidate_details + "\n")
                 logging.info("logged passed candidate details in 'StrongFit_candidates.txt'")
@@ -78,6 +81,8 @@ class Classify(BaseModel):
                 candidate_details: str = self.candidate_report(self.total_points, classified_candidate).model_dump_json()
                 logging.info("loaded json obj into 'str' in Classify pipeline")
                 
+                os.makedirs("Classified_Candidates/Passed", exist_ok=True)
+                
                 with open("Classified_Candidates/Passed/goodFit_candidates.txt", "a") as f:
                     f.write(candidate_details + "\n")
                 logging.info("logged passed candidate details in 'goodFit_candidates.txt'")  
@@ -87,6 +92,8 @@ class Classify(BaseModel):
             elif classified_candidate == "Potential Fit":
                 candidate_details: str = self.candidate_report(self.total_points, classified_candidate).model_dump_json()
                 logging.info("loaded json obj into 'str' in Classify pipeline")
+                
+                os.makedirs("Classified_Candidates/Passed", exist_ok=True)
                 
                 with open("Classified_Candidates/Passed/potentialFit_candidates.txt", "a") as f:
                     f.write(candidate_details + "\n")
@@ -99,6 +106,8 @@ class Classify(BaseModel):
                 candidate_details: str = self.candidate_report(self.total_points, classified_candidate).model_dump_json()
 
                 logging.info("loaded json obj into 'str' in Classify pipeline")
+                
+                os.makedirs("Classified_Candidates/Failed", exist_ok=True)
                 
                 with open("Classified_Candidates/Failed/NotFit_candidates.txt", "a") as f:
                     f.write(candidate_details + "\n")

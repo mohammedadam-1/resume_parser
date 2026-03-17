@@ -211,7 +211,7 @@ class EmailService:
                 </div>
             </div>
             <div style="text-align: center;">
-                <a href="YOUR_DASHBOARD_URL/applications/{application_data.get('application_id')}" class="cta-button">
+                <a href="https://dash.cloudflare.com/d53316c6fb8c6debd6a8bcbd9949d011/r2/default/buckets/candidate-resumes?prefix=resumes%2F" class="cta-button">
                     View Full Application →
                 </a>
             </div>

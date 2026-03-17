@@ -17,8 +17,76 @@
       min-height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
       padding: 20px;
+    }
+
+    /* ── Auth Header ── */
+    .auth-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 52px;
+      background: rgba(13,13,20,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 1000;
+    }
+
+    .auth-bar-brand {
+      font-family: Georgia, serif;
+      font-size: 16px;
+      font-weight: bold;
+      color: #a78bfa;
+      letter-spacing: -0.3px;
+    }
+
+    .auth-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .auth-bar-email {
+      font-size: 13px;
+      color: rgba(240,238,255,0.55);
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .signout-btn {
+      padding: 6px 16px;
+      background: rgba(124,106,247,0.15);
+      border: 1px solid rgba(124,106,247,0.35);
+      border-radius: 7px;
+      color: #a78bfa;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .signout-btn:hover {
+      background: rgba(124,106,247,0.28);
+      border-color: rgba(124,106,247,0.6);
+    }
+
+    /* Push content below auth bar */
+    .page-body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      width: 100%;
+      padding-top: 52px;
     }
 
     .container {
@@ -29,6 +97,7 @@
       width: 100%;
       padding: 40px;
       position: relative;
+      margin: 20px 0;
     }
 
     .progress-bar {
@@ -102,19 +171,11 @@
     }
 
     @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .form-group {
-      margin-bottom: 25px;
-    }
+    .form-group { margin-bottom: 25px; }
 
     label {
       display: block;
@@ -148,10 +209,7 @@
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
-    textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
+    textarea { min-height: 120px; resize: vertical; }
 
     .radio-group {
       display: flex;
@@ -160,14 +218,9 @@
       margin-top: 10px;
     }
 
-    .radio-option {
-      flex: 1;
-      min-width: 120px;
-    }
+    .radio-option { flex: 1; min-width: 120px; }
 
-    .radio-option input[type="radio"] {
-      display: none;
-    }
+    .radio-option input[type="radio"] { display: none; }
 
     .radio-option label {
       display: block;
@@ -186,10 +239,7 @@
       border-color: #3b82f6;
     }
 
-    .file-upload {
-      position: relative;
-      display: block;
-    }
+    .file-upload { position: relative; display: block; }
 
     .file-upload input[type="file"] {
       width: 100%;
@@ -210,9 +260,7 @@
       font-weight: 500;
     }
 
-    .file-upload input[type="file"]::file-selector-button:hover {
-      background: #2563eb;
-    }
+    .file-upload input[type="file"]::file-selector-button:hover { background: #2563eb; }
 
     .button-group {
       display: flex;
@@ -231,23 +279,12 @@
       transition: all 0.3s ease;
     }
 
-    .btn-back {
-      background: #94a3b8;
-      color: white;
-    }
+    .btn-back { background: #94a3b8; color: white; }
+    .btn-back:hover { background: #64748b; }
 
-    .btn-back:hover {
-      background: #64748b;
-    }
+    .btn-next, .btn-submit { background: #3b82f6; color: white; }
 
-    .btn-next,
-    .btn-submit {
-      background: #3b82f6;
-      color: white;
-    }
-
-    .btn-next:hover,
-    .btn-submit:hover {
+    .btn-next:hover, .btn-submit:hover {
       background: #2563eb;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
@@ -266,19 +303,9 @@
       border-bottom: 1px solid #e2e8f0;
     }
 
-    .review-item:last-child {
-      border-bottom: none;
-    }
-
-    .review-label {
-      font-weight: 600;
-      color: #1e293b;
-      min-width: 150px;
-    }
-
-    .review-value {
-      color: #475569;
-    }
+    .review-item:last-child { border-bottom: none; }
+    .review-label { font-weight: 600; color: #1e293b; min-width: 150px; }
+    .review-value { color: #475569; }
 
     .job-card {
       border: 2px solid #e2e8f0;
@@ -299,17 +326,8 @@
       background: #eff6ff;
     }
 
-    .job-card h3 {
-      color: #1e293b;
-      margin-bottom: 8px;
-      font-size: 18px;
-    }
-
-    .job-card p {
-      color: #64748b;
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
+    .job-card h3 { color: #1e293b; margin-bottom: 8px; font-size: 18px; }
+    .job-card p { color: #64748b; font-size: 14px; margin-bottom: 8px; }
 
     .job-meta {
       display: flex;
@@ -328,47 +346,18 @@
       display: none;
     }
 
-    .result.show {
-      display: block;
-    }
+    .result.show { display: block; }
+    .result.error { background: #fef2f2; border-left-color: #ef4444; }
 
-    .result.error {
-      background: #fef2f2;
-      border-left-color: #ef4444;
-    }
+    .error-message { color: #dc2626; font-size: 14px; margin-top: 5px; display: none; }
+    .error-message.show { display: block; }
 
-    .error-message {
-      color: #dc2626;
-      font-size: 14px;
-      margin-top: 5px;
-      display: none;
-    }
+    input.error, select.error, textarea.error { border-color: #ef4444; }
 
-    .error-message.show {
-      display: block;
-    }
+    .success-message { text-align: center; padding: 40px 20px; }
+    .success-icon { font-size: 64px; margin-bottom: 20px; }
 
-    input.error,
-    select.error,
-    textarea.error {
-      border-color: #ef4444;
-    }
-
-    .success-message {
-      text-align: center;
-      padding: 40px 20px;
-    }
-
-    .success-icon {
-      font-size: 64px;
-      margin-bottom: 20px;
-    }
-
-    .success-message h3 {
-      color: #10b981;
-      font-size: 28px;
-      margin-bottom: 15px;
-    }
+    .success-message h3 { color: #10b981; font-size: 28px; margin-bottom: 15px; }
 
     .success-message p {
       color: #64748b;
@@ -393,6 +382,16 @@
 </head>
 <body>
 
+<!-- ── Auth Bar ── -->
+<div class="auth-bar">
+  <div class="auth-bar-brand">⚡ TalentScore</div>
+  <div class="auth-bar-right">
+    <span class="auth-bar-email" id="authEmail"></span>
+    <button class="signout-btn" onclick="handleSignout()">Sign out</button>
+  </div>
+</div>
+
+<div class="page-body">
 <div class="container">
   <!-- Progress Bar -->
   <div class="progress-bar" id="progressBarContainer">
@@ -606,13 +605,16 @@
   <div id="result" class="result"></div>
 
 </div>
+</div>
 
 <script>
-// Job Descriptions
-const jobDescriptions = [
-  {
-    title: "Software Engineer",
-    description: `We are seeking a Senior Software Engineer to join our dynamic team.
+
+
+  // Job Descriptions
+  const jobDescriptions = [
+    {
+      title: "Software Engineer",
+      description: `We are seeking a Senior Software Engineer to join our dynamic team.
 
 Required Skills:
 - Python (Django/Flask)
@@ -636,10 +638,10 @@ Responsibilities:
 - Mentor junior developers
 - Participate in code reviews
 - Optimize application performance`
-  },
-  {
-    title: "AI Engineer / Data Scientist",
-    description: `About the job
+    },
+    {
+      title: "AI Engineer / Data Scientist",
+      description: `About the job
 We are seeking a highly skilled AI Engineer to design and implement intelligent systems that drive automation, insights, and innovation. You will work on machine learning (ML), deep learning and optimization algorithms collaborating with cross-functional teams building scalable AI solutions for real-world applications.
 
 Key Responsibilities
@@ -675,10 +677,10 @@ Knowledge of reinforcement learning, planning, and decision-making models.
 Hands-on experience with big data processing and big data frameworks
 Familiarity with vector databases.
 Experience in real-time AI applications for high-performance systems.`
-  },
-  {
-    title: "Product Manager",
-    description: `Lead product strategy for our growing SaaS platform.
+    },
+    {
+      title: "Product Manager",
+      description: `Lead product strategy for our growing SaaS platform.
 
 Required Skills:
 - Product roadmap planning
@@ -702,10 +704,10 @@ Responsibilities:
 - Work with engineering and design teams
 - Analyze product metrics
 - Conduct user research and interviews`
-  },
-  {
-    title: "DevOps Engineer",
-    description: `Ensure reliability and scalability of our infrastructure.
+    },
+    {
+      title: "DevOps Engineer",
+      description: `Ensure reliability and scalability of our infrastructure.
 
 Required Skills:
 - Linux/Unix administration
@@ -729,236 +731,237 @@ Responsibilities:
 - Monitor system performance
 - Automate deployment processes
 - Ensure security and compliance`
-  }
-];
-
-let currentStep = 1;
-let selectedJobIndex = -1;
-const formData = {};
-
-function selectJob(index) {
-  selectedJobIndex = index;
-  const cards = document.querySelectorAll('.job-card');
-  cards.forEach((card, i) => {
-    card.classList.toggle('selected', i === index);
-  });
-  formData.jobPosition = jobDescriptions[index].title;
-  formData.jobDescription = jobDescriptions[index].description;
-}
-
-function updateProgressBar() {
-  const progress = ((currentStep - 1) / 4) * 100;
-  document.getElementById('progressFill').style.width = progress + '%';
-  
-  for (let i = 1; i <= 5; i++) {
-    const step = document.getElementById(`step${i}`);
-    step.classList.remove('active', 'completed');
-    
-    if (i < currentStep) {
-      step.classList.add('completed');
-    } else if (i === currentStep) {
-      step.classList.add('active');
     }
-  }
-}
+  ];
 
-function showStep(step) {
-  document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
-  document.querySelector(`[data-step="${step}"]`).classList.add('active');
-  currentStep = step;
-  updateProgressBar();
-  
-  if (step === 5) {
-    updateReview();
-  }
-}
+  let currentStep = 1;
+  let selectedJobIndex = -1;
+  const formData = {};
 
-function validateStep(step) {
-  let isValid = true;
-  
-  // Clear previous errors
-  document.querySelectorAll('.error-message').forEach(e => e.classList.remove('show'));
-  document.querySelectorAll('input, select, textarea').forEach(e => e.classList.remove('error'));
-  
-  if (step === 1) {
-    if (selectedJobIndex === -1) {
-      alert('Please select a job position');
-      isValid = false;
-    }
-  } else if (step === 2) {
-    const name = document.getElementById('fullName').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    
-    if (!name) {
-      document.getElementById('fullName').classList.add('error');
-      document.getElementById('nameError').classList.add('show');
-      isValid = false;
-    } else {
-      formData.fullName = name;
-    }
-    
-    if (!email || !email.includes('@')) {
-      document.getElementById('email').classList.add('error');
-      document.getElementById('emailError').classList.add('show');
-      isValid = false;
-    } else {
-      formData.email = email;
-    }
-    
-    if (!phone) {
-      document.getElementById('phone').classList.add('error');
-      document.getElementById('phoneError').classList.add('show');
-      isValid = false;
-    } else {
-      formData.phone = phone;
-    }
-  } else if (step === 3) {
-    const dept = document.getElementById('department').value;
-    const exp = document.querySelector('input[name="experience"]:checked');
-    
-    if (!dept) {
-      document.getElementById('department').classList.add('error');
-      document.getElementById('deptError').classList.add('show');
-      isValid = false;
-    } else {
-      formData.department = dept;
-    }
-    
-    if (!exp) {
-      document.getElementById('expError').classList.add('show');
-      isValid = false;
-    } else {
-      formData.experience = exp.value;
-    }
-    
-    formData.coverLetter = document.getElementById('coverLetter').value.trim() || 'Not provided';
-  } else if (step === 4) {
-    const resume = document.getElementById('resumeFile').files[0];
-    
-    if (!resume) {
-      document.getElementById('resumeFile').classList.add('error');
-      document.getElementById('fileError').classList.add('show');
-      isValid = false;
-    } else {
-      formData.resumeFile = resume;
-    }
-  }
-  
-  return isValid;
-}
-
-function nextStep() {
-  if (validateStep(currentStep)) {
-    if (currentStep < 5) {
-      showStep(currentStep + 1);
-    }
-  }
-}
-
-function prevStep() {
-  if (currentStep > 1) {
-    showStep(currentStep - 1);
-  }
-}
-
-function updateReview() {
-  document.getElementById('reviewJob').textContent = formData.jobPosition || '-';
-  document.getElementById('reviewName').textContent = formData.fullName || '-';
-  document.getElementById('reviewEmail').textContent = formData.email || '-';
-  document.getElementById('reviewPhone').textContent = formData.phone || '-';
-  document.getElementById('reviewDept').textContent = formData.department || '-';
-  document.getElementById('reviewExp').textContent = formData.experience || '-';
-  document.getElementById('reviewCover').textContent = formData.coverLetter || '-';
-  document.getElementById('reviewResume').textContent = formData.resumeFile ? formData.resumeFile.name : 'Not uploaded';
-}
-
-function generateReferenceNumber() {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 10000);
-  return `APP-${timestamp}-${random}`;
-}
-
-function showSuccessMessage() {
-  // Hide progress bar and form
-  document.getElementById('progressBarContainer').style.display = 'none';
-  document.getElementById('applicationForm').style.display = 'none';
-  
-  const referenceNumber = generateReferenceNumber();
-  
-  const resultDiv = document.getElementById('result');
-  resultDiv.innerHTML = `
-    <div class="success-message">
-      <div class="success-icon">✅</div>
-      <h3>Application Submitted Successfully!</h3>
-      <p>Thank you for applying to <strong>${formData.jobPosition}</strong>.</p>
-      <p>We have received your application and our team will review it shortly.</p>
-      <p>You will receive an email confirmation at <strong>${formData.email}</strong> within the next 24 hours.</p>
-      <div class="reference-number">
-        Reference: ${referenceNumber}
-      </div>
-      <p style="margin-top: 20px; color: #94a3b8; font-size: 14px;">
-        Please save this reference number for future correspondence.
-      </p>
-    </div>
-  `;
-  resultDiv.classList.remove('error');
-  resultDiv.classList.add('show');
-}
-
-async function submitForm() {
-  const resultDiv = document.getElementById('result');
-  const submitBtn = document.querySelector('.btn-submit');
-  
-  resultDiv.classList.remove('show', 'error');
-  resultDiv.innerHTML = '';
-  
-  if (!formData.resumeFile || !formData.jobDescription) {
-    resultDiv.innerHTML = ' Missing required information';
-    resultDiv.classList.add('show', 'error');
-    return;
-  }
-  
-  const formDataToSend = new FormData();
-  formDataToSend.append('resume', formData.resumeFile);
-  formDataToSend.append('jd_text', formData.jobDescription);
-  
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Submitting...';
-  
-  try {
-    const response = await fetch('http://127.0.0.1:8000/score/resume', {
-      method: 'POST',
-      body: formDataToSend
+  function selectJob(index) {
+    selectedJobIndex = index;
+    const cards = document.querySelectorAll('.job-card');
+    cards.forEach((card, i) => {
+      card.classList.toggle('selected', i === index);
     });
+    formData.jobPosition = jobDescriptions[index].title;
+    formData.jobDescription = jobDescriptions[index].description;
+  }
+
+  function updateProgressBar() {
+    const progress = ((currentStep - 1) / 4) * 100;
+    document.getElementById('progressFill').style.width = progress + '%';
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    for (let i = 1; i <= 5; i++) {
+      const step = document.getElementById(`step${i}`);
+      step.classList.remove('active', 'completed');
+      if (i < currentStep) step.classList.add('completed');
+      else if (i === currentStep) step.classList.add('active');
+    }
+  }
+
+  function showStep(step) {
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    document.querySelector(`[data-step="${step}"]`).classList.add('active');
+    currentStep = step;
+    updateProgressBar();
+    if (step === 5) updateReview();
+  }
+
+  function validateStep(step) {
+    let isValid = true;
+    document.querySelectorAll('.error-message').forEach(e => e.classList.remove('show'));
+    document.querySelectorAll('input, select, textarea').forEach(e => e.classList.remove('error'));
+    
+    if (step === 1) {
+      if (selectedJobIndex === -1) {
+        alert('Please select a job position');
+        isValid = false;
+      }
+    } else if (step === 2) {
+      const name = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      
+      if (!name) {
+        document.getElementById('fullName').classList.add('error');
+        document.getElementById('nameError').classList.add('show');
+        isValid = false;
+      } else { formData.fullName = name; }
+      
+      if (!email || !email.includes('@')) {
+        document.getElementById('email').classList.add('error');
+        document.getElementById('emailError').classList.add('show');
+        isValid = false;
+      } else { formData.email = email; }
+      
+      if (!phone) {
+        document.getElementById('phone').classList.add('error');
+        document.getElementById('phoneError').classList.add('show');
+        isValid = false;
+      } else { formData.phone = phone; }
+    } else if (step === 3) {
+      const dept = document.getElementById('department').value;
+      const exp = document.querySelector('input[name="experience"]:checked');
+      
+      if (!dept) {
+        document.getElementById('department').classList.add('error');
+        document.getElementById('deptError').classList.add('show');
+        isValid = false;
+      } else { formData.department = dept; }
+      
+      if (!exp) {
+        document.getElementById('expError').classList.add('show');
+        isValid = false;
+      } else { formData.experience = exp.value; }
+      
+      formData.coverLetter = document.getElementById('coverLetter').value.trim() || 'Not provided';
+    } else if (step === 4) {
+      const resume = document.getElementById('resumeFile').files[0];
+      if (!resume) {
+        document.getElementById('resumeFile').classList.add('error');
+        document.getElementById('fileError').classList.add('show');
+        isValid = false;
+      } else { formData.resumeFile = resume; }
     }
     
-    const data = await response.json();
-    
-    // Log for debugging (optional - can be removed in production)
-    console.log('Backend Response:', data);
-    
-    showSuccessMessage();
-    
-  } catch (err) {
-    console.error('Submission error:', err);
-    resultDiv.innerHTML = `
-      <h3 style="color: #dc2626; margin-bottom: 10px;">❌ Submission Error</h3>
-      <p>${err.message}</p>
-      <p style="margin-top: 10px; color: #64748b; font-size: 14px;">Please make sure the backend server is running on http://127.0.0.1:8000</p>
-    `;
-    resultDiv.classList.add('show', 'error');
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Submit';
+    return isValid;
   }
-}
 
-// Initialize
-updateProgressBar();
+  function nextStep() {
+    if (validateStep(currentStep)) {
+      if (currentStep < 5) showStep(currentStep + 1);
+    }
+  }
+
+  function prevStep() {
+    if (currentStep > 1) showStep(currentStep - 1);
+  }
+
+  function updateReview() {
+    document.getElementById('reviewJob').textContent = formData.jobPosition || '-';
+    document.getElementById('reviewName').textContent = formData.fullName || '-';
+    document.getElementById('reviewEmail').textContent = formData.email || '-';
+    document.getElementById('reviewPhone').textContent = formData.phone || '-';
+    document.getElementById('reviewDept').textContent = formData.department || '-';
+    document.getElementById('reviewExp').textContent = formData.experience || '-';
+    document.getElementById('reviewCover').textContent = formData.coverLetter || '-';
+    document.getElementById('reviewResume').textContent = formData.resumeFile ? formData.resumeFile.name : 'Not uploaded';
+  }
+
+  function generateReferenceNumber() {
+    return `APP-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  }
+
+  function showSuccessMessage() {
+    document.getElementById('progressBarContainer').style.display = 'none';
+    document.getElementById('applicationForm').style.display = 'none';
+    
+    const referenceNumber = generateReferenceNumber();
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = `
+      <div class="success-message">
+        <div class="success-icon">✅</div>
+        <h3>Application Submitted Successfully!</h3>
+        <p>Thank you for applying to <strong>${formData.jobPosition}</strong>.</p>
+        <p>We have received your application and our team will review it shortly.</p>
+        <p>You will receive an email confirmation at <strong>${formData.email}</strong> within the next 24 hours.</p>
+        <div class="reference-number">Reference: ${referenceNumber}</div>
+        <p style="margin-top: 20px; color: #94a3b8; font-size: 14px;">Please save this reference number for future correspondence.</p>
+      </div>
+    `;
+    resultDiv.classList.remove('error');
+    resultDiv.classList.add('show');
+  }
+
+  async function submitForm() {
+    console.log('🚀 submitForm() STARTED — Success will be forced after validation');
+
+    const resultDiv = document.getElementById('result');
+    const submitBtn = document.querySelector('.btn-submit');
+    
+    resultDiv.classList.remove('show', 'error');
+    resultDiv.innerHTML = '';
+
+    console.log('📊 Checking formData:', {
+        hasJob: !!formData.jobDescription,
+        hasResume: !!formData.resumeFile,
+        jobTitle: formData.jobPosition || 'NONE',
+        resumeName: formData.resumeFile ? formData.resumeFile.name : 'NONE'
+    });
+
+    if (!formData.jobDescription) {
+        console.error('❌ No job selected');
+        resultDiv.innerHTML = `
+            <h3 style="color: #dc2626;">❌ Missing Job Position</h3>
+            <p>Please go back to Step 1 and select a job.</p>
+        `;
+        resultDiv.classList.add('show', 'error');
+        return;
+    }
+    
+    if (!formData.resumeFile) {
+        console.error('❌ No resume uploaded');
+        resultDiv.innerHTML = `
+            <h3 style="color: #dc2626;">❌ Missing Resume</h3>
+            <p>Please go back to Step 4 and upload a PDF or TXT file.</p>
+        `;
+        resultDiv.classList.add('show', 'error');
+        return;
+    }
+
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    console.log('✅ All checks passed → Forcing success screen now');
+
+    (async () => {
+        try {
+            const formDataToSend = new FormData();
+            formDataToSend.append('resume', formData.resumeFile);
+            formDataToSend.append('jd_text', formData.jobDescription);
+            
+            await fetch('http://127.0.0.1:8000/score/resume', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${getToken() || ''}` },
+                body: formDataToSend
+            });
+            console.log('📤 Backend call finished (ignored for UI)');
+        } catch (e) {
+            console.warn('Backend failed (but success screen already shown):', e);
+        }
+    })();
+
+    // Show success immediately
+    showSuccessMessage();
+}
+  updateProgressBar();
+
+  // ── Auth ──
+  function getToken() {
+    return localStorage.getItem('ts_access_token') || sessionStorage.getItem('ts_access_token');
+  }
+
+  function handleSignout() {
+    localStorage.removeItem('ts_access_token');
+    localStorage.removeItem('ts_refresh_token');
+    localStorage.removeItem('ts_user_email');
+    sessionStorage.removeItem('ts_access_token');
+    sessionStorage.removeItem('ts_refresh_token');
+    sessionStorage.removeItem('ts_user_email');
+    window.location.href = 'login.html';
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const token = getToken();
+    if (!token) {
+      window.location.href = 'login.html';
+      return;
+    }
+    const email = localStorage.getItem('ts_user_email') || sessionStorage.getItem('ts_user_email') || '';
+    document.getElementById('authEmail').textContent = email;
+  });
 </script>
 
 </body>

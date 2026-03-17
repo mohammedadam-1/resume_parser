@@ -1,4 +1,5 @@
 import sys 
+import os
 from src.exception import CustomException 
 from src.logger import logging 
 from models.schemas import CurrentPoints
@@ -31,6 +32,8 @@ class Fail_Fast(BaseModel):
                 )
                 str_report = json.dumps(report)
                 
+                os.makedirs("Classified_Candidates/Failed", exist_ok=True)
+                
                 with open("Classified_Candidates/Failed/hard_fail.txt", "a") as f:
                     f.write(str_report + "\n")
                 logging.info("logged failed candidate details in 'hard_fail.txt'")
@@ -51,8 +54,11 @@ class Fail_Fast(BaseModel):
                 )
                 str_report = json.dumps(report)
                 
+                os.makedirs("Classified_Candidates/Failed", exist_ok=True)
+                
                 with open("Classified_Candidates/Failed/hard_fail.txt", "a") as f:
                     f.write(str_report + "\n")
+                logging.info("logged failed candidate details in 'hard_fail.txt'")
                 
                 return self.rejected_candidate_report(
                     failed_gate="education",

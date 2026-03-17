@@ -18,9 +18,6 @@ class Extract(BaseModel):
         
         try:
             
-            # if not os.path.exists(self.file_path):
-            #     raise FileNotFoundError(f"The specified path was not found: {self.file_path}")
-            
             file_content = route_filetype(stream=self.file_bytes)
             check_file_len(file_content)    
             logging.info('extracted content from the file')

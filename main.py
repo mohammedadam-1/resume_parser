@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException 
+from fastapi import FastAPI
 from api.score import router as score_router
-
+from api.auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -18,6 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(score_router)
+app.include_router(auth_router)
 
 @app.get("/")
 def health_check():
