@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 from src.exception import CustomException
 from src.logger import logging
-import pymupdf
 import re 
 from datetime import datetime 
 from dateutil.relativedelta import relativedelta
@@ -11,7 +10,7 @@ import pdfplumber
 from fastapi import HTTPException, status
 import json  
 import io
-
+import numpy as np
 
 
 def check_file_extension(file_path: FilePath) -> FilePath:
@@ -341,4 +340,10 @@ def safe_json_loads(text: str) -> dict:
         raise ValueError("No JSON object found in LLM response")    
                 
   
-
+def cos_sim(a: np.ndarray, b: np.ndarray) -> float:
+    try:
+        a = np.array(a).flatten()  # (1, 384) → (384,)
+        b = np.array(b).flatten()  # (1, 384) → (384,)
+        return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+    except Exception as e:
+        raise CustomException(e, sys)

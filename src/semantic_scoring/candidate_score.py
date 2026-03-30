@@ -1,21 +1,22 @@
 import sys 
+import numpy as np
 from src.exception import CustomException 
 from src.logger import logging 
 from src.llm_pipeline.data_validation_normalization import (
     ResumeSchema,
     JdSchema
 )
-from sentence_transformers import SentenceTransformer, util
-import torch
+from fastembed import TextEmbedding
 from typing import Tuple
 from pydantic import BaseModel, PrivateAttr, Field
 import threading
+from src.utils import cos_sim
   
 # Global model instance with thread-safe lazy loading
 _model_lock = threading.Lock()
 _model_instance_ = None 
 
-def get_shared_model() -> SentenceTransformer:
+def get_shared_model() -> TextEmbedding:
     """lazy loading using threading"""
     
     global _model_instance_
@@ -24,7 +25,7 @@ def get_shared_model() -> SentenceTransformer:
         with _model_lock:
             if _model_instance_ is None:
                 logging.info("Loading SentenceTransformer model...")
-                _model_instance_ = SentenceTransformer("all-MiniLM-L6-v2")
+                _model_instance_ = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
                 logging.info("Model loaded successfully")
                 
     return _model_instance_        
@@ -32,7 +33,7 @@ def get_shared_model() -> SentenceTransformer:
 class Candidate_Score(BaseModel):
     resume_data: ResumeSchema
     jd_data: JdSchema 
-    _model: SentenceTransformer = PrivateAttr()
+    _model: TextEmbedding = PrivateAttr()
     current_points: dict[str, float] = Field(default_factory=lambda: {
             "required_skills": 0.0,
             "preferred_skills": 0.0,
@@ -52,7 +53,7 @@ class Candidate_Score(BaseModel):
             candidate_skills = set(self.resume_data.skills)
             logging.info("Loaded candidate_skills for scoring from resume")
             embed_candidate_skills = ", ".join(list(candidate_skills))
-            candidate_skills_embedding = self._model.encode(embed_candidate_skills, convert_to_tensor=True)
+            candidate_skills_embedding = next(self._model.embed([embed_candidate_skills]))
             
             required_skills = set(self.jd_data.required_skills)
             logging.info("Loaded required_skills for scoring from jd")
@@ -78,8 +79,8 @@ class Candidate_Score(BaseModel):
                     logging.info("Initialized semantic skills matching for required_skills using cosine similariy")
                    
                     embed_required_skills = ", ".join(list(required_skills))
-                    required_skills_embedding = self._model.encode(embed_required_skills, convert_to_tensor=True) 
-                    cos_score_req = util.cos_sim(candidate_skills_embedding, required_skills_embedding)
+                    required_skills_embedding = next(self._model.embed([embed_required_skills]))
+                    cos_score_req = cos_sim(candidate_skills_embedding, required_skills_embedding)
                     logging.info("Calculated the cosine similariy score for required_skills")
                     
                     if cos_score_req >= 0.90:
@@ -134,8 +135,8 @@ class Candidate_Score(BaseModel):
                 if len(candidate_skills) > 0:
                     logging.info("Initialized semantic skills matching for preferred_skills using cosine similariy")
                     embed_preferred_skills = ", ".join(list(preferred_skills))
-                    preferred_skills_embedding = self._model.encode(embed_preferred_skills, convert_to_tensor=True)
-                    cos_score_pref = util.cos_sim(candidate_skills_embedding, preferred_skills_embedding)
+                    preferred_skills_embedding = next(self._model.embed([embed_preferred_skills]))
+                    cos_score_pref = cos_sim(candidate_skills_embedding, preferred_skills_embedding)
                     logging.info("Calculated the cosine similariy score for preferred_skills")
 
                 
@@ -293,13 +294,13 @@ class Candidate_Score(BaseModel):
                     return current_points
                 
                 else:
-                    embed_required_field = [required_education_field]
-                    embed_candidate_field = [candidate_education_field]
+                    embed_required_field = required_education_field
+                    embed_candidate_field = candidate_education_field
                     
-                    required_field_embeddings = self._model.encode(embed_required_field, convert_to_tensor=True)
-                    candidate_field_embeddings = self._model.encode(embed_candidate_field, convert_to_tensor=True)
+                    required_field_embeddings = next(self._model.embed([embed_required_field]))
+                    candidate_field_embeddings = next(self._model.embed([embed_candidate_field]))
                     logging.info("Converted education fields to vectors")
-                    cosine_scores = util.cos_sim(required_field_embeddings, candidate_field_embeddings)
+                    cosine_scores = cos_sim(required_field_embeddings, candidate_field_embeddings)
                     logging.info("Calculated cosine score using cosine_similariy")
             
                     if cosine_scores >= 0.90:
@@ -362,19 +363,19 @@ class Candidate_Score(BaseModel):
                 embed_candidate_keywords = candidate_keywords
                 embed_job_desc_keywords = job_desc_keywords
                 # convert keywords into vector embeddings
-                candidate_keywords_embedding = self._model.encode(embed_candidate_keywords, convert_to_tensor=True) 
-                job_desc_embedding = self._model.encode(embed_job_desc_keywords, convert_to_tensor=True)
+                candidate_keywords_embedding = next(self._model.embed(embed_candidate_keywords))
+                job_desc_embedding = next(self._model.embed(embed_job_desc_keywords))
                 logging.info("candidate_keywords and job_desc_keywords embeded")
             
-                cosine_scores = util.cos_sim(candidate_keywords_embedding, job_desc_embedding)
+                cosine_scores = cos_sim(candidate_keywords_embedding, job_desc_embedding)
                 logging.info("Calculated semantic score for keywords")
                 # pick the most matching keywords
-                best_matches_per_keyword, _ = torch.max(cosine_scores, dim=1)
+                best_matches_per_keyword = np.max(cosine_scores, axis=0)
                 logging.info("found the best matched keywords")
                 # print(f"best_matches_per_keyword: {best_matches_per_keyword}")
-                final_similarity = torch.mean(best_matches_per_keyword).item() 
+                final_similarity = np.mean(best_matches_per_keyword)
                 logging.info("Averaged the score by dividing final_similarity by the len of best_matches_per_keyword")
-                keywords_score = round(final_similarity * 10, 2) 
+                keywords_score = round(float(final_similarity) * 10, 2)
                 logging.info(f"{keywords_score} points assigned to candidate's keywords")
     
                 current_points["keywords"] = keywords_score
