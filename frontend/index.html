@@ -922,7 +922,7 @@ Responsibilities:
             formDataToSend.append('resume', formData.resumeFile);
             formDataToSend.append('jd_text', formData.jobDescription);
             
-            await fetch('http://127.0.0.1:8000/score/resume', {
+            await fetch('https://resume-parser-r9dg.onrender.com/score/resume', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${getToken() || ''}` },
                 body: formDataToSend
