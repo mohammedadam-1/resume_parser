@@ -4,7 +4,8 @@ from src.logger import logging
 from src.utils import check_file_extension, check_file_size
 from src.db.dependencies import get_current_user
 import time
-from main import limiter
+from api.limiter import limiter
+
 router = APIRouter(prefix="/score", tags=["Scoring"])
 
 @router.post("/resume")
