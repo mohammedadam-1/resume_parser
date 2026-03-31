@@ -4,12 +4,8 @@ from src.logger import logging
 from src.utils import check_file_extension, check_file_size
 from src.db.dependencies import get_current_user
 import time
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-
-
+from main import limiter
 router = APIRouter(prefix="/score", tags=["Scoring"])
-limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/resume")
 @limiter.limit("3/minute")
