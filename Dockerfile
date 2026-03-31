@@ -2,22 +2,24 @@ FROM python:3.13-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
+RUN apt-get update && apt-get install -y \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 
 RUN uv sync --frozen --no-install-project
 
-RUN .venv/bin/python -c "\
-    from fastembed import TextEmbedding; \
-    TextEmbedding('sentence-transformers/all-MiniLM-L6-v2', \
-    cache_dir='/app/.fastembed_cache')"
+RUN .venv/bin/python -c "from fastembed import TextEmbedding; TextEmbedding('sentence-transformers/all-MiniLM-L6-v2', cache_dir='/app/.fastembed_cache')"
 
 
 FROM python:3.13-slim AS runtime
 
 RUN apt-get update && apt-get install -y \
     poppler-utils \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
