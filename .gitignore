@@ -14,4 +14,6 @@ logs/
 .env 
 data/
 Classified_Candidates
-
+local_fastembed_cache/
+.fastembed_cache/
+**/local_fastembed_cache/
