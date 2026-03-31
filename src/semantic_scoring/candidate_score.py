@@ -6,6 +6,7 @@ from src.llm_pipeline.data_validation_normalization import (
     ResumeSchema,
     JdSchema
 )
+import os
 from fastembed import TextEmbedding
 from typing import Tuple
 from pydantic import BaseModel, PrivateAttr, Field
@@ -25,7 +26,10 @@ def get_shared_model() -> TextEmbedding:
         with _model_lock:
             if _model_instance_ is None:
                 logging.info("Loading SentenceTransformer model...")
-                _model_instance_ = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
+                _model_instance_ = TextEmbedding(
+                    "sentence-transformers/all-MiniLM-L6-v2",
+                    cache_dir=os.getenv("FASTEMBED_CACHE_PATH", ".fastembed_cache")
+                )
                 logging.info("Model loaded successfully")
                 
     return _model_instance_        
