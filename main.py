@@ -33,7 +33,7 @@ app.add_middleware(
 app.include_router(score_router)
 app.include_router(auth_router)
 
-@app.get("/", methods=['GET', 'HEAD'])
+@app.api_route("/", methods=['GET', 'HEAD'])
 def health_check():
     return {"status":"ok"}
 
