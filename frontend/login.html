@@ -556,6 +556,28 @@
       else handleLogin();
     }
   });
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('ts_access_token');
+    if (token) {
+        // Try to refresh before redirecting
+        try {
+            const refresh_token = localStorage.getItem('ts_refresh_token');
+            const res = await fetch('https://resume-parser-r9dg.onrender.com/auth/refresh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh_token })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('ts_access_token', data.access_token);
+                window.location.href = 'index.html';
+            }
+        } catch (e) {
+            // Refresh failed, stay on login page
+        }
+    }
+});
 </script>
 </body>
 </html>

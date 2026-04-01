@@ -875,66 +875,51 @@ Responsibilities:
   }
 
   async function submitForm() {
-    console.log('🚀 submitForm() STARTED — Success will be forced after validation');
+    if (!formData.jobDescription || !formData.resumeFile) return;
 
-    const resultDiv = document.getElementById('result');
     const submitBtn = document.querySelector('.btn-submit');
-    
-    resultDiv.classList.remove('show', 'error');
-    resultDiv.innerHTML = '';
-
-    console.log('📊 Checking formData:', {
-        hasJob: !!formData.jobDescription,
-        hasResume: !!formData.resumeFile,
-        jobTitle: formData.jobPosition || 'NONE',
-        resumeName: formData.resumeFile ? formData.resumeFile.name : 'NONE'
-    });
-
-    if (!formData.jobDescription) {
-        console.error('❌ No job selected');
-        resultDiv.innerHTML = `
-            <h3 style="color: #dc2626;">❌ Missing Job Position</h3>
-            <p>Please go back to Step 1 and select a job.</p>
-        `;
-        resultDiv.classList.add('show', 'error');
-        return;
-    }
-    
-    if (!formData.resumeFile) {
-        console.error('❌ No resume uploaded');
-        resultDiv.innerHTML = `
-            <h3 style="color: #dc2626;">❌ Missing Resume</h3>
-            <p>Please go back to Step 4 and upload a PDF or TXT file.</p>
-        `;
-        resultDiv.classList.add('show', 'error');
-        return;
-    }
-
-
+    const resultDiv = document.getElementById('result');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
+    resultDiv.classList.remove('show', 'error');
 
-    console.log('✅ All checks passed → Forcing success screen now');
-
-    (async () => {
-        try {
-            const formDataToSend = new FormData();
-            formDataToSend.append('resume', formData.resumeFile);
-            formDataToSend.append('jd_text', formData.jobDescription);
-            
-            await fetch('https://resume-parser-r9dg.onrender.com/score/resume', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${getToken() || ''}` },
-                body: formDataToSend
-            });
-            console.log('📤 Backend call finished (ignored for UI)');
-        } catch (e) {
-            console.warn('Backend failed (but success screen already shown):', e);
+    try {
+        const token = getToken();
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
         }
-    })();
 
-    // Show success immediately
-    showSuccessMessage();
+        const formDataToSend = new FormData();
+        formDataToSend.append('resume', formData.resumeFile);
+        formDataToSend.append('jd_text', formData.jobDescription);
+
+        const res = await fetch('https://resume-parser-r9dg.onrender.com/score/resume', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formDataToSend
+        });
+
+        if (res.status === 401) {
+            // Token expired — redirect to login
+            window.location.href = 'login.html';
+            return;
+        }
+
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.detail || 'Submission failed. Please try again.');
+        }
+
+        showSuccessMessage(); 
+
+    } catch (err) {
+        resultDiv.innerHTML = `<h3 style="color:#dc2626">❌ Error</h3><p>${err.message}</p>`;
+        resultDiv.classList.add('show', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit';
+    }
 }
   updateProgressBar();
 
