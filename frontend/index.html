@@ -901,7 +901,6 @@ Responsibilities:
         });
 
         if (res.status === 401) {
-            // Token expired — redirect to login
             window.location.href = 'login.html';
             return;
         }
@@ -911,7 +910,8 @@ Responsibilities:
             throw new Error(data.detail || 'Submission failed. Please try again.');
         }
 
-        showSuccessMessage(); 
+        // Backend responded 200 OK — show success immediately, don't wait for body
+        showSuccessMessage();
 
     } catch (err) {
         resultDiv.innerHTML = `<h3 style="color:#dc2626">❌ Error</h3><p>${err.message}</p>`;
