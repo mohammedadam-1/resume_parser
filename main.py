@@ -40,7 +40,7 @@ def health_check():
     return {"status":"ok"}
 
 app.mount("/frontend", StaticFiles(directory="frontend"), name="candidate_application")
-app.mount("")
+
 
 
 
