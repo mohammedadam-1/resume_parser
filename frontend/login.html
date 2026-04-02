@@ -13,7 +13,7 @@
       --accent: #7c6af7;
       --accent2: #a78bfa;
       --text: #f0eeff;
-      --muted: #8b87a8;
+      --muted: #8b87a8; 
       --error: #f87171;
       --success: #34d399;
     }
@@ -563,10 +563,10 @@
     }
   });
 
-  window.addEventListener('DOMContentLoaded', async () => {
+  // Replace the second DOMContentLoaded handler
+window.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('ts_access_token');
     if (token) {
-        // Try to refresh before redirecting
         try {
             const refresh_token = localStorage.getItem('ts_refresh_token');
             const res = await fetch('https://resume-parser-r9dg.onrender.com/auth/refresh', {
@@ -577,8 +577,8 @@
             if (res.ok) {
                 const data = await res.json();
                 localStorage.setItem('ts_access_token', data.access_token);
-                const urlParams = new URLSearchParams(window.location.search);
-                const redirectUrl = urlParams.get('redirect') || 'index.html';
+                const urlParams = new URLSearchParams(window.location.search); // ADD THIS
+                const redirectUrl = urlParams.get('redirect') || 'index.html'; // ADD THIS
                 window.location.href = redirectUrl;
             }
         } catch (e) {
