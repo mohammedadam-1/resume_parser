@@ -533,7 +533,9 @@
       storage.setItem('ts_user_email', email);
 
       showGlobal('✅ Signed in! Redirecting…', 'success');
-      setTimeout(() => { window.location.href = 'index.html'; }, 1400);
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect') || 'index.html';
+      setTimeout(() => { window.location.href = redirectUrl; }, 1400);
 
     } catch (err) {
       showGlobal(err.message, 'error');
@@ -546,7 +548,11 @@
 
   window.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('ts_access_token') || sessionStorage.getItem('ts_access_token');
-    if (token) window.location.href = 'index.html';
+    if (token) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect') || 'index.html';
+      window.location.href = redirectUrl;
+    }
   });
 
   document.addEventListener('keydown', e => {
@@ -571,7 +577,9 @@
             if (res.ok) {
                 const data = await res.json();
                 localStorage.setItem('ts_access_token', data.access_token);
-                window.location.href = 'index.html';
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirectUrl = urlParams.get('redirect') || 'index.html';
+                window.location.href = redirectUrl;
             }
         } catch (e) {
             // Refresh failed, stay on login page
